@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Info } from 'lucide-react';
 
 export default function AddPets() {
   const [formData, setFormData] = useState({
@@ -31,9 +32,7 @@ export default function AddPets() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Add Your Pet
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Add Your Pet</h1>
         <p className="text-gray-600">Fill in the details to register your beloved companion</p>
       </div>
 
@@ -43,9 +42,7 @@ export default function AddPets() {
           {/* Pet Name & Type Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Pet Name *
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Pet Name *</label>
               <input
                 type="text"
                 name="petName"
@@ -58,9 +55,7 @@ export default function AddPets() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Pet Type *
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Pet Type *</label>
               <select
                 name="petType"
                 value={formData.petType}
@@ -81,9 +76,7 @@ export default function AddPets() {
           {/* Breed & Age Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Breed
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Breed</label>
               <input
                 type="text"
                 name="breed"
@@ -95,9 +88,7 @@ export default function AddPets() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Age (years)
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Age (years)</label>
               <input
                 type="number"
                 name="age"
@@ -114,9 +105,7 @@ export default function AddPets() {
           {/* Gender & Weight Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Gender *
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Gender *</label>
               <select
                 name="gender"
                 value={formData.gender}
@@ -131,9 +120,7 @@ export default function AddPets() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Weight (kg)
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Weight (kg)</label>
               <input
                 type="number"
                 name="weight"
@@ -149,9 +136,7 @@ export default function AddPets() {
 
           {/* Color */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Color/Markings
-            </label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Color/Markings</label>
             <input
               type="text"
               name="color"
@@ -164,9 +149,7 @@ export default function AddPets() {
 
           {/* Medical History */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Medical History
-            </label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Medical History</label>
             <textarea
               name="medicalHistory"
               value={formData.medicalHistory}
@@ -187,9 +170,7 @@ export default function AddPets() {
                 onChange={handleChange}
                 className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
               />
-              <label className="ml-3 text-sm font-medium text-gray-700">
-                Vaccinated
-              </label>
+              <label className="ml-3 text-sm font-medium text-gray-700">Vaccinated</label>
             </div>
 
             <div className="flex items-center">
@@ -200,9 +181,7 @@ export default function AddPets() {
                 onChange={handleChange}
                 className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
               />
-              <label className="ml-3 text-sm font-medium text-gray-700">
-                Spayed/Neutered
-              </label>
+              <label className="ml-3 text-sm font-medium text-gray-700">Spayed/Neutered</label>
             </div>
           </div>
 
@@ -217,16 +196,8 @@ export default function AddPets() {
             <button
               type="button"
               onClick={() => setFormData({
-                petName: '',
-                petType: '',
-                breed: '',
-                age: '',
-                gender: '',
-                weight: '',
-                color: '',
-                medicalHistory: '',
-                vaccinated: false,
-                spayedNeutered: false
+                petName: '', petType: '', breed: '', age: '', gender: '',
+                weight: '', color: '', medicalHistory: '', vaccinated: false, spayedNeutered: false
               })}
               className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-all"
             >
@@ -239,9 +210,7 @@ export default function AddPets() {
       {/* Info Card */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-6">
         <div className="flex items-start space-x-3">
-          <svg className="w-6 h-6 text-blue-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <Info className="w-6 h-6 text-blue-600 mt-0.5 shrink-0" />
           <div>
             <h3 className="font-semibold text-gray-900 mb-1">Important Information</h3>
             <p className="text-sm text-gray-600">

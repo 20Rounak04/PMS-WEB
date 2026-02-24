@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { getUserDetailsThunk } from '../thunks/getUserDetailsThunk';
+import { Menu, Bell } from 'lucide-react';
 
 const mockNotifications = [
   { id: 1, title: 'Appointment Confirmed', message: 'Your grooming appointment on Feb 25 has been confirmed.', time: '2 min ago', read: false },
@@ -10,12 +11,11 @@ const mockNotifications = [
   { id: 4, title: 'New Message', message: 'Dr. Amanda Lee sent you a follow-up note about Bella.', time: 'Yesterday', read: true },
 ];
 
-// Map roleId to the correct profile route
 const profileRouteByRole = {
-  1: '/dashboard/profile',         
-  2: '/dashboard/profile',         
-  3: '/dashboard/vet-profile',     
-  4: '/dashboard/groomer-profile', 
+  1: '/dashboard/profile',
+  2: '/dashboard/profile',
+  3: '/dashboard/vet-profile',
+  4: '/dashboard/groomer-profile',
 };
 
 export default function Topbar({ setSidebarOpen }) {
@@ -44,7 +44,6 @@ export default function Topbar({ setSidebarOpen }) {
     }
   }, [dispatch, user?.id, petFromAuth?.id]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (notificationRef.current && !notificationRef.current.contains(e.target)) {
@@ -78,9 +77,7 @@ export default function Topbar({ setSidebarOpen }) {
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden text-gray-600 hover:text-gray-900"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <Menu className="w-6 h-6" />
           </button>
           <h2 className="text-2xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             PetPerfect
@@ -96,9 +93,7 @@ export default function Topbar({ setSidebarOpen }) {
               onClick={() => setShowNotifications(prev => !prev)}
               className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-indigo-50 transition-colors"
             >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
+              <Bell className="w-6 h-6 text-gray-600" />
               {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center leading-none">
                   {unreadCount}
@@ -126,9 +121,7 @@ export default function Topbar({ setSidebarOpen }) {
                 <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
                   {notifications.length === 0 ? (
                     <div className="px-4 py-8 text-center">
-                      <svg className="w-10 h-10 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
+                      <Bell className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                       <p className="text-sm text-gray-400">No notifications</p>
                     </div>
                   ) : (
@@ -138,7 +131,6 @@ export default function Topbar({ setSidebarOpen }) {
                         onClick={() => markOneRead(notification.id)}
                         className={`flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-indigo-50 transition-colors ${!notification.read ? 'bg-indigo-50/60' : ''}`}
                       >
-                        {/* Dot */}
                         <div className="mt-1.5 shrink-0">
                           {!notification.read
                             ? <span className="w-2 h-2 rounded-full bg-indigo-500 block"></span>
@@ -160,7 +152,7 @@ export default function Topbar({ setSidebarOpen }) {
             )}
           </div>
 
-          {/* User Profile — navigates based on roleId */}
+          {/* User Profile */}
           <div
             onClick={() => navigate(profileRoute)}
             className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"

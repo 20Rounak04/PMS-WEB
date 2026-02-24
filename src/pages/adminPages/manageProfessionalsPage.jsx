@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createProfessional } from '../../thunks/createProfessionalThunk';
 import { resetProfessionalState } from '../../feature/createProfessionalSlice';
@@ -12,8 +12,8 @@ const roleColors = {
 const statusColors = {
   Available: 'bg-green-100 text-green-700',
   available: 'bg-green-100 text-green-700',
-  Unavailable: 'bg-red-100 text-red-700',
-  unavailable: 'bg-red-100 text-red-700',
+  Busy: 'bg-red-100 text-red-700',
+  busy: 'bg-red-100 text-red-700',
 };
 
 const roleOptions = [
@@ -35,7 +35,6 @@ const emptyForm = {
 // Normalize API response row into flat table shape
 function normalizeProfessional(p) {
   const isVet = p.roleId === 3;
-  // vets and groomers are arrays — grab first element
   const profile = isVet
     ? (Array.isArray(p.vets) ? p.vets[0] : null)
     : (Array.isArray(p.groomers) ? p.groomers[0] : null);
@@ -73,130 +72,132 @@ function ProfessionalModal({ professional, onClose, onSave, isAdd, loading, erro
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-            <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {isAdd
-                ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              }
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800">{isAdd ? 'Add Professional' : 'Edit Professional'}</h3>
-            {!isAdd && <p className="text-sm text-gray-500">{professional.name}</p>}
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600 font-medium">{error}</p>
-          </div>
-        )}
-
-        <div className="space-y-4 mb-5">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={e => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
-              placeholder="Full name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
-              placeholder="Email address"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Phone</label>
-            <input
-              type="text"
-              value={form.phone}
-              onChange={e => setForm({ ...form, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
-              placeholder="Phone number"
-            />
-          </div>
-          {isAdd && (
+      <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="overflow-y-auto flex-1 p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isAdd
+                  ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                }
+              </svg>
+            </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
-                placeholder="Set a password"
-              />
+              <h3 className="text-lg font-bold text-gray-800">{isAdd ? 'Add Professional' : 'Edit Professional'}</h3>
+              {!isAdd && <p className="text-sm text-gray-500">{professional.name}</p>}
+            </div>
+          </div>
+
+          {error && (
+            <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600 font-medium">{error}</p>
             </div>
           )}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Role</label>
-            <select
-              value={form.roleId}
-              onChange={e => setForm({ ...form, roleId: Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
-            >
-              {roleOptions.map(opt => (
-                <option key={opt.roleId} value={opt.roleId}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Specialization</label>
-            <input
-              type="text"
-              value={form.speciality}
-              onChange={e => setForm({ ...form, speciality: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
-              placeholder="e.g. Small Animal Surgery, Exotic Animals..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Years of Experience</label>
-            <input
-              type="number"
-              min="0"
-              max="50"
-              value={form.expertise}
-              onChange={e => setForm({ ...form, expertise: Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
-              placeholder="e.g. 5"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Status</label>
-            <select
-              value={form.status}
-              onChange={e => setForm({ ...form, status: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
-            >
-              <option value="available">Available</option>
-              <option value="unavailable">Unavailable</option>
-            </select>
+
+          <div className="space-y-4 mb-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
+                placeholder="Full name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
+                placeholder="Email address"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Phone</label>
+              <input
+                type="text"
+                value={form.phone}
+                onChange={e => setForm({ ...form, phone: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
+                placeholder="Phone number"
+              />
+            </div>
+            {isAdd && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
+                  placeholder="Set a password"
+                />
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Role</label>
+              <select
+                value={form.roleId}
+                onChange={e => setForm({ ...form, roleId: Number(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
+              >
+                {roleOptions.map(opt => (
+                  <option key={opt.roleId} value={opt.roleId}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Specialization</label>
+              <input
+                type="text"
+                value={form.speciality}
+                onChange={e => setForm({ ...form, speciality: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
+                placeholder="e.g. Small Animal Surgery, Exotic Animals..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Years of Experience</label>
+              <input
+                type="number"
+                min="0"
+                max="50"
+                value={form.expertise}
+                onChange={e => setForm({ ...form, expertise: Number(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
+                placeholder="e.g. 5"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Status</label>
+              <select
+                value={form.status}
+                onChange={e => setForm({ ...form, status: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 text-sm"
+              >
+                <option value="available">Available</option>
+                <option value="busy">Busy</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-3 p-6 pt-0">
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-sm disabled:opacity-50"
+            className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-sm disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={() => onSave(form)}
             disabled={loading}
-            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -235,13 +236,23 @@ function DeleteModal({ professional, onClose, onConfirm }) {
           <p className="text-sm font-semibold text-gray-800">{professional.name}</p>
           <p className="text-sm text-gray-500">{professional.role} — {professional.email}</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-sm">Cancel</button>
-          <button onClick={onConfirm} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm">Yes, Delete</button>
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={onClose} className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-sm">Cancel</button>
+          <button onClick={onConfirm} className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm">Yes, Delete</button>
         </div>
       </div>
     </div>
   );
+}
+
+// Debounce hook for search input
+function useDebounce(value, delay) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
 }
 
 export default function ManageProfessionalsPage() {
@@ -250,23 +261,38 @@ export default function ManageProfessionalsPage() {
   const { loading: createLoading, error: createError, success: createSuccess } = useSelector((state) => state.createProfessional);
   const { professionals: apiProfessionals, loading: listLoading, error: listError } = useSelector((state) => state.listProfessionals);
 
+  // API-driven filters (sent to backend)
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all'); // 'all' | '3' | '4'
+
+  // Client-side status filter (backend no longer supports it)
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'available' | 'busy'
+
+  const debouncedSearch = useDebounce(searchTerm, 400);
+
   const [editModal, setEditModal] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Fetch whenever API-driven filters change
+  const fetchProfessionals = useCallback(() => {
+    const params = {};
+    if (roleFilter !== 'all') params.roleId = Number(roleFilter);
+    if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+    dispatch(listProfessionals(params));
+  }, [dispatch, roleFilter, debouncedSearch]);
+
   useEffect(() => {
-    dispatch(listProfessionals({}));
-  }, [dispatch]);
+    fetchProfessionals();
+  }, [fetchProfessionals]);
 
   useEffect(() => {
     if (createSuccess) {
       setShowAddModal(false);
       dispatch(resetProfessionalState());
-      dispatch(listProfessionals({}));
+      fetchProfessionals();
     }
-  }, [createSuccess, dispatch]);
+  }, [createSuccess, dispatch, fetchProfessionals]);
 
   const handleCloseAddModal = () => {
     setShowAddModal(false);
@@ -277,13 +303,10 @@ export default function ManageProfessionalsPage() {
     ? apiProfessionals.map(normalizeProfessional)
     : [];
 
+  // Client-side status filter applied on top of API results
   const filtered = professionals.filter(p => {
-    const matchesSearch =
-      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.speciality?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || p.role === roleFilter;
-    return matchesSearch && matchesRole;
+    if (statusFilter === 'all') return true;
+    return p.status?.toLowerCase() === statusFilter;
   });
 
   const handleSaveEdit = (id, fields) => {
@@ -292,17 +315,18 @@ export default function ManageProfessionalsPage() {
   };
 
   const handleAdd = (form) => {
-    const professionalData = {
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      password: form.password,
-      roleId: form.roleId,
-      speciality: form.speciality,
-      expertise: form.expertise,
-      status: form.status,
-    };
-    dispatch(createProfessional({ professionalData }));
+    dispatch(createProfessional({
+      professionalData: {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        roleId: form.roleId,
+        speciality: form.speciality,
+        expertise: form.expertise,
+        status: form.status,
+      },
+    }));
   };
 
   const handleDelete = (id) => {
@@ -310,7 +334,6 @@ export default function ManageProfessionalsPage() {
     setDeleteModal(null);
   };
 
-  // Avatar initials from name
   const getInitials = (name) => {
     if (!name || name === '—') return '?';
     const cleaned = name.replace('Dr. ', '');
@@ -339,7 +362,7 @@ export default function ManageProfessionalsPage() {
         </button>
       </div>
 
-      {/* Stats */}
+      {/* Stats — always based on full API result, not filtered */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
           { label: 'Total Professionals', value: professionals.length, color: 'bg-indigo-100 text-indigo-700' },
@@ -355,13 +378,14 @@ export default function ManageProfessionalsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-2xl shadow-lg p-5 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 max-w-md">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Search Professionals</label>
+        <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
+          {/* Search → sent to API (debounced) */}
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Search by Name</label>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search by name, email, or specialization..."
+                placeholder="Search by name..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800"
@@ -371,6 +395,8 @@ export default function ManageProfessionalsPage() {
               </svg>
             </div>
           </div>
+
+          {/* Role filter → sent to API */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Role</label>
             <select
@@ -378,9 +404,23 @@ export default function ManageProfessionalsPage() {
               onChange={e => setRoleFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800"
             >
-              <option value="all">All</option>
-              <option value="Vet">Veterinarian</option>
-              <option value="Groomer">Groomer</option>
+              <option value="all">All Roles</option>
+              <option value="3">Veterinarian</option>
+              <option value="4">Groomer</option>
+            </select>
+          </div>
+
+          {/* Status filter → client-side only (backend removed this filter) */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Status</label>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800"
+            >
+              <option value="all">All Statuses</option>
+              <option value="available">Available</option>
+              <option value="busy">Busy</option>
             </select>
           </div>
         </div>

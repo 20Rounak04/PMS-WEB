@@ -3,16 +3,14 @@ import api from '../utils/api';
 
 export const listProfessionals = createAsyncThunk(
   'professionals/list',
-  async ({ roleId, status, search } = {}, { rejectWithValue }) => {
+  async ({ roleId, search } = {}, { rejectWithValue }) => {
     try {
       const params = {};
-      if (roleId) params.roleId = roleId;
-      if (status) params.status = status;
+      if (roleId && [3, 4].includes(Number(roleId))) params.roleId = roleId;
       if (search) params.search = search;
 
       const response = await api.get('/Admin/manage/list', { params });
 
-      // Response shape: { message: "...", data: [...] }
       const data = response.data;
       if (Array.isArray(data?.data)) return data.data;
       if (Array.isArray(data)) return data;
