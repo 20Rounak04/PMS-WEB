@@ -20,6 +20,8 @@ export default function AddPets() {
     age: '',
     gender: '',
     weight: '',
+    description: '',
+    medicalHistory: '',
   });
 
   const [showNotification, setShowNotification] = useState(false);
@@ -78,6 +80,8 @@ export default function AddPets() {
       age: formData.age ? parseFloat(formData.age) : null,
       gender: formData.gender || null,
       weight: formData.weight ? parseFloat(formData.weight) : null,
+      description: formData.description || null,
+      medicalHistory: formData.medicalHistory || null,
     };
 
     try {
@@ -90,6 +94,8 @@ export default function AddPets() {
         age: '',
         gender: '',
         weight: '',
+        description: '',
+        medicalHistory: '',
       });
     } catch (err) {
       // Error is handled by Redux
@@ -105,6 +111,8 @@ export default function AddPets() {
       age: '',
       gender: '',
       weight: '',
+      description: '',
+      medicalHistory: '',
     });
     dispatch(resetPetState());
   };
@@ -254,12 +262,40 @@ export default function AddPets() {
             </div>
           </div>
 
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Description/Color/Markings</label>
+            <input
+              type="text"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
+              placeholder="Describe color, markings, or other identifying features"
+              disabled={loading}
+            />
+          </div>
+
+          {/* Medical History */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Medical History</label>
+            <textarea
+              name="medicalHistory"
+              value={formData.medicalHistory}
+              onChange={handleChange}
+              rows="4"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors resize-none"
+              placeholder="Any medical conditions, allergies, or special notes..."
+              disabled={loading}
+            />
+          </div>
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="flex-1 px-6 py-3 bg-linear-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {loading ? (
                 <span className="flex items-center justify-center">
@@ -292,7 +328,7 @@ export default function AddPets() {
           <div>
             <h3 className="font-semibold text-gray-900 mb-1">Important Information</h3>
             <p className="text-sm text-gray-600">
-              Make sure to provide accurate information about your pet for better care and service. The breed field is required for registration.
+              Make sure to provide accurate information about your pet for better care and service. You can always update this information later from your profile. The breed field is required for registration.
             </p>
           </div>
         </div>
