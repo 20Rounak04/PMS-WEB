@@ -1,22 +1,19 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getUserDetailsThunk } from '../../../thunks/getUserDetailsThunk';
+import { AlertCircle, Smile } from 'lucide-react';
 
 export default function UserProfile() {
   const dispatch = useDispatch();
   const authState = useSelector((state) => state.auth);
   const { userDetails, loading, error } = useSelector((state) => state.userDetails);
 
-  // authState.user = { user: { id, email, roleId, roleName }, pet: { id, age, species, breed } }
   const user = authState?.user?.user;
   const petFromAuth = authState?.user?.pet;
 
   useEffect(() => {
     if (user?.id && petFromAuth?.id) {
-      dispatch(getUserDetailsThunk({
-        userId: user.id,
-        petId: petFromAuth.id,
-      }));
+      dispatch(getUserDetailsThunk({ userId: user.id, petId: petFromAuth.id }));
     }
   }, [dispatch, user?.id, petFromAuth?.id]);
 
@@ -32,7 +29,7 @@ export default function UserProfile() {
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4" />
               <p className="text-gray-600">Loading profile...</p>
             </div>
           </div>
@@ -46,9 +43,7 @@ export default function UserProfile() {
       <div className="max-w-4xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8">
           <div className="flex items-center gap-3">
-            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <AlertCircle className="w-6 h-6 text-red-600 shrink-0" />
             <p className="text-red-600">{error}</p>
           </div>
         </div>
@@ -83,13 +78,9 @@ export default function UserProfile() {
 
           {/* Profile Info */}
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              {user?.email || 'User'}
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">{user?.email || 'User'}</h1>
             <p className="text-gray-600 mb-2">{user?.email || 'user@example.com'}</p>
-            <p className="text-sm text-indigo-600 font-semibold mb-4 capitalize">
-              {user?.roleName || 'User'}
-            </p>
+            <p className="text-sm text-indigo-600 font-semibold mb-4 capitalize">{user?.roleName || 'User'}</p>
             <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
               Edit Profile
             </button>
@@ -102,9 +93,7 @@ export default function UserProfile() {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-linear-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <Smile className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-xl font-bold text-gray-800">Pet Information</h2>
           </div>

@@ -5,7 +5,7 @@ export const registerUser = createAsyncThunk(
   'register/registerUser',
   async (userData, { rejectWithValue }) => {
     try {
-      // userData should now include: name, email, password, breedId, age
+      // userData should now include: name, email, password, phone, breedId, age
       const response = await authAPI.register(userData);
       
       // Store user data and token if provided

@@ -11,6 +11,12 @@ import completedAppointmentsReducer from '../feature/getCompletedAppointmentSlic
 import cancelledAppointmentsReducer from '../feature/getCancelledAppointmentSlice';
 import createProfessionalReducer from '../feature/createProfessionalSlice';
 import listProfessionalsReducer from '../feature/listProfessionalsSlice';
+import editProfessionalReducer from '../feature/editProfessionalDetailsSlice';
+import deleteProfessionalReducer from '../feature/deleteProfessionalSlice';
+import listUsersReducer from '../feature/listUsersSlice';
+import editUserReducer from '../feature/editUserDetailsSlice';
+import deleteUserReducer from '../feature/deleteUserSlice';
+import addPetReducer from '../feature/addPetsSlice';
 
 const store = configureStore({
   reducer: {
@@ -26,6 +32,12 @@ const store = configureStore({
     cancelledAppointments: cancelledAppointmentsReducer,
     createProfessional: createProfessionalReducer,
     listProfessionals: listProfessionalsReducer,
+    editProfessional: editProfessionalReducer,
+    deleteProfessional: deleteProfessionalReducer,
+    listUsers: listUsersReducer,
+    editUser: editUserReducer,
+    deleteUser: deleteUserReducer,
+    addPet: addPetReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNewAppointment } from '../../../components/createNewAppointment';
+import { CheckCircle, Search, Star } from 'lucide-react';
 
 // Success Modal Component
 function SuccessModal({ isOpen, onClose }) {
@@ -7,25 +8,20 @@ function SuccessModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Modal */}
       <div className="relative bg-white rounded-xl shadow-xl p-8 max-w-md w-full border-2 border-indigo-200">
         <div className="text-center">
           {/* Success Icon */}
           <div className="mx-auto w-16 h-16 rounded-full bg-linear-to-br from-green-400 to-green-600 flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckCircle className="w-8 h-8 text-white" />
           </div>
-          
-          {/* Success Message */}
+
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
             Appointment Request Successfull!
           </h2>
           <p className="text-gray-600 mb-6">
             Your appointment request has been successfully sent. Please wait for the confirmation. ThankYou!!
           </p>
-          
-          {/* OK Button */}
+
           <button
             onClick={onClose}
             className="w-full py-3 px-6 rounded-xl text-white font-bold bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all"
@@ -64,7 +60,7 @@ export default function GetAppointmentPage() {
     <div className="max-w-7xl mx-auto p-6">
       {/* Success Modal */}
       <SuccessModal isOpen={showSuccessModal} onClose={handleModalClose} />
-      
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Get Appointment</h1>
@@ -78,8 +74,8 @@ export default function GetAppointmentPage() {
             <React.Fragment key={step}>
               <div className="flex flex-col items-center">
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${
-                  currentStep >= step 
-                    ? 'bg-indigo-600 text-white' 
+                  currentStep >= step
+                    ? 'bg-indigo-600 text-white'
                     : 'bg-gray-200 text-gray-500'
                 }`}>
                   {step}
@@ -96,7 +92,7 @@ export default function GetAppointmentPage() {
               {index < 3 && (
                 <div className={`flex-1 h-1 mx-4 rounded transition-all ${
                   currentStep > step ? 'bg-indigo-600' : 'bg-gray-200'
-                }`}></div>
+                }`} />
               )}
             </React.Fragment>
           ))}
@@ -136,9 +132,7 @@ export default function GetAppointmentPage() {
                       <p className="text-sm text-gray-500">{pet.age} years old</p>
                     </div>
                     {formData.petId === pet.id && (
-                      <svg className="w-6 h-6 text-indigo-600 ml-auto" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
+                      <CheckCircle className="w-6 h-6 text-indigo-600 ml-auto" />
                     )}
                   </div>
                 </div>
@@ -170,9 +164,7 @@ export default function GetAppointmentPage() {
                     <p className="text-sm text-gray-600">Professional care for your pet</p>
                   </div>
                   {formData.appointmentType === type.value && (
-                    <svg className="w-6 h-6 text-indigo-600 ml-auto" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
+                    <CheckCircle className="w-6 h-6 text-indigo-600 ml-auto" />
                   )}
                 </div>
               </div>
@@ -185,12 +177,9 @@ export default function GetAppointmentPage() {
       {currentStep === 3 && (
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Select Date & Time</h2>
-          
-          {/* Date Selection */}
+
           <div className="mb-8">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Choose Date
-            </label>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">Choose Date</label>
             <input
               type="date"
               value={formData.date}
@@ -200,11 +189,8 @@ export default function GetAppointmentPage() {
             />
           </div>
 
-          {/* Time Selection */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Choose Time Slot
-            </label>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">Choose Time Slot</label>
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
               {timeSlots.map(slot => (
                 <button
@@ -222,7 +208,6 @@ export default function GetAppointmentPage() {
             </div>
           </div>
 
-          {/* Optional Description */}
           <div className="mt-8">
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               Additional Notes (Optional)
@@ -242,7 +227,7 @@ export default function GetAppointmentPage() {
       {currentStep === 4 && (
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Choose Professional</h2>
-          
+
           {/* Search Bar */}
           <div className="mb-6">
             <div className="relative">
@@ -253,16 +238,14 @@ export default function GetAppointmentPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800"
               />
-              <svg className="w-6 h-6 text-gray-400 absolute left-4 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="w-6 h-6 text-gray-400 absolute left-4 top-3.5" />
             </div>
           </div>
 
           {/* Loading State */}
           {(vetsLoading || groomersLoading) && (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4" />
               <p className="text-gray-600">Loading professionals...</p>
             </div>
           )}
@@ -288,17 +271,13 @@ export default function GetAppointmentPage() {
                       <h3 className="text-lg font-bold text-gray-800">{professional.name}</h3>
                       <p className="text-sm text-gray-600">{professional.specialty}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
+                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                         <span className="text-sm font-semibold text-gray-800">{professional.rating}</span>
                         <span className="text-sm text-gray-600">• {professional.experience}</span>
                       </div>
                     </div>
                     {formData.professionalId === professional.id && (
-                      <svg className="w-6 h-6 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
+                      <CheckCircle className="w-6 h-6 text-indigo-600" />
                     )}
                   </div>
                 </div>
@@ -309,9 +288,6 @@ export default function GetAppointmentPage() {
           {/* No Results */}
           {searchedProfessionals.length === 0 && !vetsLoading && !groomersLoading && (
             <div className="text-center py-12">
-              <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
               <p className="text-gray-600">No professionals found for this appointment type</p>
             </div>
           )}

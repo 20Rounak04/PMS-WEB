@@ -129,6 +129,23 @@ export default function RegisterPage({ onNavigateToLogin }) {
             </div>
 
             <div>
+              <label htmlFor="phone" className="block text-sm font-bold mb-2 text-indigo-700">
+                Phone Number
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full px-5 py-4 border-2 border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 transition-all bg-linear-to-r from-blue-50 to-indigo-50 text-gray-800 font-medium shadow-sm"
+                placeholder="+1 (555) 123-4567"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
               <label htmlFor="password" className="block text-sm font-bold mb-2 text-indigo-700">
                 Password
               </label>
