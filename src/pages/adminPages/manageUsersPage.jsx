@@ -366,7 +366,7 @@ export default function ManageUsersPage() {
                       <td className="px-6 py-4 text-sm text-gray-500 font-medium">{index + 1}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
                             {initials}
                           </div>
                           <span className="text-sm font-semibold text-gray-800">{firstName} {lastName}</span>
