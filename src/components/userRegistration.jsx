@@ -11,7 +11,8 @@ export default function useUserRegistration(onNavigateToLogin) {
 
   const [formData, setFormData] = useState({
     name: '',
-    email: '',  
+    email: '',
+    phone: '',
     password: '',
     species: '',
     breed: '',
@@ -22,21 +23,18 @@ export default function useUserRegistration(onNavigateToLogin) {
   const [validationError, setValidationError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Fetch breeds on component mount
   useEffect(() => {
     dispatch(fetchBreeds());
   }, [dispatch]);
 
-  // Handle successful registration - show modal
   useEffect(() => {
     if (success) {
-      // Show success modal
       setShowSuccessModal(true);
       
-      // Reset form
       setFormData({
         name: '',
         email: '',
+        phone: '',
         password: '',
         species: '',
         breed: '',
@@ -45,21 +43,17 @@ export default function useUserRegistration(onNavigateToLogin) {
     }
   }, [success]);
 
-  // Handle modal close - navigate to login
   const handleModalClose = () => {
     setShowSuccessModal(false);
     
-    // Reset register state
     dispatch(resetRegisterState());
     
-    // Navigate to login
     onNavigateToLogin();
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Clear validation error when user types
     if (validationError) {
       setValidationError('');
     }
@@ -68,7 +62,7 @@ export default function useUserRegistration(onNavigateToLogin) {
       setFormData({
         ...formData,
         species: value,
-        breed: '' // Reset breed when species changes
+        breed: ''
       });
     } else {
       setFormData({
@@ -89,10 +83,20 @@ export default function useUserRegistration(onNavigateToLogin) {
       return false;
     }
     
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setValidationError('Please enter a valid email address');
+      return false;
+    }
+
+    if (!formData.phone.trim()) {
+      setValidationError('Please enter your phone number');
+      return false;
+    }
+
+    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
+    if (!phoneRegex.test(formData.phone.trim())) {
+      setValidationError('Please enter a valid phone number');
       return false;
     }
     
@@ -140,21 +144,19 @@ export default function useUserRegistration(onNavigateToLogin) {
       e.preventDefault();
     }
     
-    // Validate form
     if (!validateForm()) {
       return;
     }
     
-    // Prepare data for API
     const registrationData = {
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
+      phone: formData.phone.trim(),
       password: formData.password,
-      breedId: parseInt(formData.breed), // Convert to number as backend expects breedId
-      age: parseFloat(formData.age) // Convert age to number
+      breedId: parseInt(formData.breed),
+      age: parseFloat(formData.age) 
     };
     
-    // Dispatch register action
     dispatch(registerUser(registrationData));
   };
 
