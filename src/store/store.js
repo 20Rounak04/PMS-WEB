@@ -17,6 +17,8 @@ import listUsersReducer from '../feature/listUsersSlice';
 import editUserReducer from '../feature/editUserDetailsSlice';
 import deleteUserReducer from '../feature/deleteUserSlice';
 import addPetReducer from '../feature/addPetsSlice';
+import groomerAppointmentsReducer from '../feature/listAppointmentGroomerSlice';
+import groomerProfileReducer from '../feature/getGroomerProfileSlice';
 
 const store = configureStore({
   reducer: {
@@ -38,6 +40,8 @@ const store = configureStore({
     editUser: editUserReducer,
     deleteUser: deleteUserReducer,
     addPet: addPetReducer,
+    groomerAppointments: groomerAppointmentsReducer,
+    groomerProfile: groomerProfileReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

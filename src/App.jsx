@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+import LandingPage from "./pages/landing/landingPage";
 import LoginPage from "./pages/login/loginPage";
 import RegisterPage from "./pages/register/registerPage";
 import DashboardRoutes from "./pages/dashboard/DashboardRoutes";
@@ -9,7 +10,7 @@ import { setCredentials } from "./feature/loginSlice";
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useSelector((state) => state.auth);
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
   return children;
 }
@@ -44,7 +45,15 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Landing Page - public */}
+      <Route
+        path="/"
+        element={
+          <PublicRoute>
+            <LandingPage />
+          </PublicRoute>
+        }
+      />
 
       <Route
         path="/login"
@@ -72,6 +81,9 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* Catch all - redirect to landing */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

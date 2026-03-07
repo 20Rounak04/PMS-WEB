@@ -20,21 +20,21 @@ export default function ListProfessionalPage() {
 
   const transformedVets = Array.isArray(vets) ? vets.map(vet => ({
     id: vet.id,
-    name: vet.name,
+    name: vet.users?.name || 'Unknown',
     specialty: vet.specialization,
     rating: vet.rating || 4.5,
     experience: `${vet.experienceYears} years`,
-    avatar: vet.name.split(' ').map(n => n[0]).join('').toUpperCase(),
+    avatar: (vet.users?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase(),
     available: vet.status === 'available'
   })) : [];
 
   const transformedGroomers = Array.isArray(groomers) ? groomers.map(groomer => ({
     id: groomer.id,
-    name: groomer.name,
+    name: groomer.users?.name || 'Unknown',
     specialty: groomer.specialization,
     rating: groomer.rating || 4.5,
     experience: `${groomer.experienceYears} years`,
-    avatar: groomer.name.split(' ').map(n => n[0]).join('').toUpperCase(),
+    avatar: (groomer.users?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase(),
     available: groomer.status === 'available'
   })) : [];
 
