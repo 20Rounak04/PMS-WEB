@@ -24,13 +24,13 @@ const allMenuItems = [
     icon: <PlusCircle className="w-6 h-6" />,
   },
   {
-    name: 'Groomer Appointments',
+    name: 'My Appointments',
     path: '/dashboard/groomer-appointments',
     roles: [4],
     icon: <Scissors className="w-6 h-6" />,
   },
   {
-    name: 'Vet Appointments',
+    name: 'My Appointments',
     path: '/dashboard/vet-appointments',
     roles: [3],
     icon: <FileText className="w-6 h-6" />,
