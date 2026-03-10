@@ -174,12 +174,6 @@ export default function VetAppointmentPage() {
       return;
     }
 
-    console.log('Updating appointment:', {
-      vetId: vetProfile.id,
-      appointmentId: editModal.id,
-      status: status,
-    });
-
     try {
       await dispatch(updateVetAppointmentStatus({
         vetId: vetProfile.id,

@@ -33,7 +33,7 @@ function App() {
 
     if (accessToken && userStr && !isAuthenticated) {
       try {
-        const user = JSON.parse(userStr); // { user: {...}, pet: {...} }
+        const user = JSON.parse(userStr); 
         dispatch(setCredentials({ user, accessToken }));
       } catch (error) {
         console.error('Failed to restore auth state:', error);

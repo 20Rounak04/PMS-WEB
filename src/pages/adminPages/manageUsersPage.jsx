@@ -180,7 +180,6 @@ function DeleteModal({ user, onClose, onConfirm, loading }) {
   );
 }
 
-// Helper to normalize API user shape to component shape
 function normalizeUser(user) {
   const nameParts = (user.name || '').split(' ');
   return {
@@ -204,7 +203,6 @@ export default function ManageUsersPage() {
   const [deleteModal, setDeleteModal] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Fetch on mount
   useEffect(() => {
     dispatch(listUsers({}));
     return () => {
@@ -213,15 +211,12 @@ export default function ManageUsersPage() {
       dispatch(resetDeleteUserState());
     };
   }, [dispatch]);
-
-  // Sync API data into local state for edit/delete
   useEffect(() => {
     if (apiUsers?.length) {
       setLocalUsers(apiUsers.map(normalizeUser));
     }
   }, [apiUsers]);
 
-  // Search with debounce — re-fetch from API when name search changes
   useEffect(() => {
     const timeout = setTimeout(() => {
       dispatch(listUsers({ name: searchTerm || undefined }));
@@ -229,7 +224,6 @@ export default function ManageUsersPage() {
     return () => clearTimeout(timeout);
   }, [searchTerm, dispatch]);
 
-  // Handle successful delete
   useEffect(() => {
     if (deleteSuccess) {
       setDeleteModal(null);
@@ -251,7 +245,6 @@ export default function ManageUsersPage() {
   };
 
   const handleSaveEdit = () => {
-    // Re-fetch the user list after successful edit
     dispatch(listUsers({ name: searchTerm || undefined }));
     setEditModal(null);
   };

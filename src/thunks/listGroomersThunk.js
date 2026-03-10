@@ -6,7 +6,6 @@ export const fetchGroomers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.get('/user/groomer/get');
-      // Extract the data array from the response
       return response.data.data || [];
     } catch (error) {
       if (error.response && error.response.data) {

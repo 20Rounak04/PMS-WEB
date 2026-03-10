@@ -2,7 +2,6 @@ import React from 'react';
 import { createNewAppointment } from '../../../components/createNewAppointment';
 import { CheckCircle, Search, Star } from 'lucide-react';
 
-// Success Modal Component
 function SuccessModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 

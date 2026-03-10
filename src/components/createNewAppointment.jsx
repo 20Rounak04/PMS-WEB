@@ -8,23 +8,14 @@ import { resetAppointmentState } from '../feature/createAppointmentSlice';
 export const createNewAppointment = () => {
   const dispatch = useDispatch();
   
-  // Get vets and groomers state
   const { vets = [], loading: vetsLoading } = useSelector((state) => state.vets);
   const { groomers = [], loading: groomersLoading } = useSelector((state) => state.groomers);
   const { loading: createLoading, error: createError, success } = useSelector((state) => state.createAppointment);
-
-  // Get user's pets
   const { userDetails } = useSelector((state) => state.userDetails);
   const authState = useSelector((state) => state.auth);
-  
-  // Extract pet from auth state as fallback
   const userData = authState?.user?.data || authState?.user;
   const petFromAuth = userData?.pet;
-  
-  // Get pets from userDetails API response
   const petsFromDetails = userDetails?.pets || [];
-  
-  // Use pets from userDetails if available, otherwise create array from auth pet
   const userPets = petsFromDetails.length > 0 
     ? petsFromDetails.map(pet => ({
         id: pet.id,
@@ -70,20 +61,17 @@ export const createNewAppointment = () => {
     '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM'
   ];
 
-  // Fetch data on component mount
   useEffect(() => {
     dispatch(fetchVets());
     dispatch(fetchGroomers());
   }, [dispatch]);
 
-  // Handle success
   useEffect(() => {
     if (success) {
       setShowSuccessModal(true);
     }
   }, [success, dispatch]);
 
-  // Handle modal close
   const handleModalClose = () => {
     setShowSuccessModal(false);
     setFormData({
@@ -98,14 +86,12 @@ export const createNewAppointment = () => {
     dispatch(resetAppointmentState());
   };
 
-  // Handle error
   useEffect(() => {
     if (createError) {
       alert(`Error: ${createError}`);
     }
   }, [createError]);
 
-  // Update filtered professionals based on appointment type
   useEffect(() => {
     if (formData.appointmentType === 'veterinary' || 
         formData.appointmentType === 'vaccination' || 
@@ -138,7 +124,6 @@ export const createNewAppointment = () => {
     }
   }, [formData.appointmentType, vets, groomers]);
 
-  // Filter professionals by search term
   const searchedProfessionals = filteredProfessionals.filter(prof => 
     prof.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     prof.specialty.toLowerCase().includes(searchTerm.toLowerCase())
@@ -166,14 +151,9 @@ export const createNewAppointment = () => {
       return;
     }
 
-    // Get the backend appointment type value
     const appointmentTypeObj = appointmentTypes.find(t => t.value === formData.appointmentType);
     const backendAppointmentType = appointmentTypeObj?.backendValue || formData.appointmentType;
-
-    // Get the selected professional
     const selectedProfessional = filteredProfessionals.find(p => p.id === formData.professionalId);
-
-    // Determine service type based on appointment type
     let serviceType;
     if (formData.appointmentType === 'grooming') {
       serviceType = 'grooming';
@@ -181,10 +161,7 @@ export const createNewAppointment = () => {
       serviceType = 'vet';
     }
 
-    // Convert time format from "10:30 AM" to "10:30"
     const time24Hour = formData.time.replace(/\s?(AM|PM)/, '').trim();
-
-    // Prepare appointment data matching Bruno's working format
     const requestBody = {
       petId: parseInt(formData.petId),
       serviceType: serviceType,
@@ -194,7 +171,6 @@ export const createNewAppointment = () => {
       description: formData.description || null,
     };
 
-    // Add the appropriate professional ID
     if (selectedProfessional?.type === 'vet') {
       requestBody.vetId = parseInt(formData.professionalId);
     } else if (selectedProfessional?.type === 'groomer') {
@@ -219,7 +195,6 @@ export const createNewAppointment = () => {
   };
 
   return {
-    // State
     formData,
     currentStep,
     searchTerm,
@@ -228,13 +203,9 @@ export const createNewAppointment = () => {
     timeSlots,
     searchedProfessionals,
     showSuccessModal,
-    
-    // Loading states
     vetsLoading,
     groomersLoading,
     createLoading,
-    
-    // Handlers
     handleInputChange,
     handleNext,
     handlePrevious,

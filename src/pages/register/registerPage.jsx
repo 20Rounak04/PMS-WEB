@@ -1,7 +1,6 @@
 import React from 'react';
 import useUserRegistration from '../../components/userRegistration';
 
-// Success Modal Component
 function SuccessModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
