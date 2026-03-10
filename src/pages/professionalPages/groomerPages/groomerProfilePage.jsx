@@ -54,8 +54,6 @@ export default function GroomerProfilePage() {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  const totalAppointments = '128'; 
-
   return (
     <div className="max-w-4xl mx-auto">
       {/* Error Message */}
@@ -147,8 +145,6 @@ export default function GroomerProfilePage() {
                 { label: 'Speciality', value: 'Groomer' },
                 { label: 'Expertise', value: groomerProfile?.specialization || 'Breed-Specific Styling' },
                 { label: 'Experience', value: groomerProfile?.experienceYears ? `${groomerProfile.experienceYears} Years` : 'N/A' },
-                { label: 'Rating', value: groomerProfile?.rating ? `${groomerProfile.rating} / 5.0` : 'N/A' },
-                { label: 'Total Appointments', value: totalAppointments },
                 { label: 'Joined', value: formatJoinedDate(groomerProfile?.createdAt) },
               ].map(item => (
                 <div key={item.label} className="border border-gray-100 rounded-xl p-4 bg-gray-50">
@@ -166,8 +162,6 @@ export default function GroomerProfilePage() {
               {[
                 { label: 'Email', value: groomerProfile?.users?.email || user?.email || 'groomer@example.com' },
                 { label: 'Phone', value: user?.phone || '+1 234 567 9002' },
-                { label: 'Location', value: groomerProfile?.location || 'New York, NY' },
-                { label: 'Working Hours', value: 'Mon – Sat, 9:00 AM – 6:00 PM' },
               ].map(item => (
                 <div key={item.label} className="border border-gray-100 rounded-xl p-4 bg-gray-50">
                   <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wide">{item.label}</p>

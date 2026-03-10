@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { fetchGroomerAppointments } from '../thunks/listAppointmentGroomerThunk';
-import { updateGroomerAppointmentStatus } from '../thunks/setAppointmentStatusGroomerThunk';
+import { fetchVetAppointments } from '../thunks/listAppointmentVetThunk';
+import { updateVetAppointmentStatus } from '../thunks/setAppointmentStatusVetThunk';
 
 const initialState = {
   appointments: [],
@@ -8,11 +8,11 @@ const initialState = {
   error: null,
 };
 
-const listAppointmentGroomerSlice = createSlice({
-  name: 'groomerAppointments',
+const listAppointmentVetSlice = createSlice({
+  name: 'vetAppointments',
   initialState,
   reducers: {
-    clearGroomerAppointmentsError: (state) => {
+    clearVetAppointmentsError: (state) => {
       state.error = null;
     },
     updateAppointmentStatus: (state, action) => {
@@ -35,20 +35,20 @@ const listAppointmentGroomerSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchGroomerAppointments.pending, (state) => {
+      .addCase(fetchVetAppointments.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchGroomerAppointments.fulfilled, (state, action) => {
+      .addCase(fetchVetAppointments.fulfilled, (state, action) => {
         state.loading = false;
         state.appointments = action.payload;
         state.error = null;
       })
-      .addCase(fetchGroomerAppointments.rejected, (state, action) => {
+      .addCase(fetchVetAppointments.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to fetch groomer appointments';
+        state.error = action.payload || 'Failed to fetch vet appointments';
       })
-      .addCase(updateGroomerAppointmentStatus.fulfilled, (state, action) => {
+      .addCase(updateVetAppointmentStatus.fulfilled, (state, action) => {
         const { appointmentId, updatedAppointment } = action.payload;
         const index = state.appointments.findIndex(apt => apt.id === appointmentId);
         if (index !== -1) {
@@ -63,9 +63,9 @@ const listAppointmentGroomerSlice = createSlice({
 });
 
 export const { 
-  clearGroomerAppointmentsError, 
+  clearVetAppointmentsError, 
   updateAppointmentStatus,
   updateAppointment 
-} = listAppointmentGroomerSlice.actions;
+} = listAppointmentVetSlice.actions;
 
-export default listAppointmentGroomerSlice.reducer;
+export default listAppointmentVetSlice.reducer;
