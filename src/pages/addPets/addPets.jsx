@@ -7,8 +7,6 @@ import { fetchBreeds } from '../../thunks/getAnimalBreedThunk';
 
 export default function AddPets() {
   const dispatch = useDispatch();
-  
-  // Redux state
   const { loading, error, success } = useSelector((state) => state.addPet);
   const { speciesList, breedsBySpecies, loading: breedsLoading } = useSelector((state) => state.breed);
   const userId = useSelector((state) => state.userDetails?.userDetails?.id);
@@ -26,12 +24,10 @@ export default function AddPets() {
 
   const [showNotification, setShowNotification] = useState(false);
 
-  // Fetch breeds on component mount
   useEffect(() => {
     dispatch(fetchBreeds());
   }, [dispatch]);
 
-  // Handle success/error notifications
   useEffect(() => {
     if (success || error) {
       setShowNotification(true);
@@ -48,7 +44,6 @@ export default function AddPets() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Reset breed selection when pet type changes
     if (name === 'petType') {
       setFormData(prev => ({
         ...prev,
@@ -66,13 +61,11 @@ export default function AddPets() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate required fields
     if (!formData.breedId) {
       alert('Please select a breed');
       return;
     }
 
-    // Prepare data for API
     const petData = {
       name: formData.name || null,
       petType: formData.petType || null,
@@ -86,7 +79,6 @@ export default function AddPets() {
 
     try {
       await dispatch(addPet({ petData })).unwrap();
-      // Clear form on success
       setFormData({
         name: '',
         petType: '',
@@ -98,7 +90,6 @@ export default function AddPets() {
         medicalHistory: '',
       });
     } catch (err) {
-      // Error is handled by Redux
       console.error('Failed to add pet:', err);
     }
   };
@@ -117,7 +108,6 @@ export default function AddPets() {
     dispatch(resetPetState());
   };
 
-  // Filter breeds based on selected pet type
   const availableBreeds = formData.petType && breedsBySpecies[formData.petType]
     ? breedsBySpecies[formData.petType]
     : [];

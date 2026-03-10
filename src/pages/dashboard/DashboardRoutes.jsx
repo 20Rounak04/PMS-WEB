@@ -16,7 +16,6 @@ import VetProfilePage from '../professionalPages/vetPage/vetProfilePage';
 import ManageUsersPage from '../adminPages/manageUsersPage';
 import ManageProfessionalsPage from '../adminPages/manageProfessionalsPage';
 
-// Default landing page per role
 const defaultRouteByRole = {
   1: '/dashboard/manage-users',       // Admin
   2: '/dashboard/home',               // User
@@ -24,7 +23,6 @@ const defaultRouteByRole = {
   4: '/dashboard/groomer-appointments', // Groomer
 };
 
-// Which routes each role is allowed to access
 const allowedRoutesByRole = {
   1: ['/dashboard/manage-users', '/dashboard/manage-professionals', '/dashboard/profile'],
   2: ['/dashboard/home', '/dashboard/appointments', '/dashboard/add-pets', '/dashboard/professionals', '/dashboard/appointment', '/dashboard/my-appointments', '/dashboard/profile'],
@@ -32,7 +30,6 @@ const allowedRoutesByRole = {
   4: ['/dashboard/groomer-appointments', '/dashboard/groomer-profile'],
 };
 
-// Wraps a route and redirects if the role doesn't have access
 function ProtectedRoute({ roleId, path, children }) {
   const allowed = allowedRoutesByRole[roleId] || [];
   if (!allowed.includes(path)) {

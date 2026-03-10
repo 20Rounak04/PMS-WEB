@@ -6,11 +6,8 @@ export const loginUser = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await authAPI.login(credentials);
-
-      // Response structure: { message: "success", data: { token, user, pet } }
       const { token, user, pet } = response.data.data;
 
-      // Store correctly in localStorage
       localStorage.setItem('accessToken', token);
       localStorage.setItem('user', JSON.stringify({ user, pet }));
 

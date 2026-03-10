@@ -174,12 +174,6 @@ export default function GroomerAppointmentPage() {
       return;
     }
 
-    console.log('Updating appointment:', {
-      groomerId: groomerProfile.id,
-      appointmentId: editModal.id,
-      status: status,
-    });
-
     try {
       await dispatch(updateGroomerAppointmentStatus({
         groomerId: groomerProfile.id,

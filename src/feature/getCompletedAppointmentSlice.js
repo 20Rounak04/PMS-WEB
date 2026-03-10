@@ -22,7 +22,6 @@ const completedAppointmentSlice = createSlice({
       })
       .addCase(fetchCompletedAppointments.fulfilled, (state, action) => {
         state.loading = false;
-        // Handle both direct array and nested data structure
         const appointments = Array.isArray(action.payload) 
           ? action.payload 
           : (action.payload?.data || []);
