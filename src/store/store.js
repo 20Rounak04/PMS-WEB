@@ -19,6 +19,11 @@ import deleteUserReducer from '../feature/deleteUserSlice';
 import addPetReducer from '../feature/addPetsSlice';
 import groomerAppointmentsReducer from '../feature/listAppointmentGroomerSlice';
 import groomerProfileReducer from '../feature/getGroomerProfileSlice';
+import notificationsReducer from '../feature/getNotificationsSlice';
+import vetAppointmentsReducer from '../feature/listAppointmentVetSlice';
+import vetProfileReducer from '../feature/getVetProfileSlice';
+import setAppointmentStatusVetReducer from '../feature/setAppointmentStatusVetSlice';
+import setAppointmentStatusGroomerReducer from '../feature/setAppointmentStatusGroomerSlice';
 
 const store = configureStore({
   reducer: {
@@ -42,6 +47,11 @@ const store = configureStore({
     addPet: addPetReducer,
     groomerAppointments: groomerAppointmentsReducer,
     groomerProfile: groomerProfileReducer,
+    notifications: notificationsReducer,
+    vetAppointments: vetAppointmentsReducer,
+    vetProfile: vetProfileReducer,
+    setAppointmentStatusVet: setAppointmentStatusVetReducer,
+    setAppointmentStatusGroomer: setAppointmentStatusGroomerReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

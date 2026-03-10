@@ -1,14 +1,30 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchVetProfile } from '../../../thunks/getVetProfileThunk';
+import { updateVetStatus } from '../../../feature/getVetProfileSlice';
 
 export default function VetProfilePage() {
+  const dispatch = useDispatch();
+  
   const authState = useSelector((state) => state.auth);
   const userData = authState?.user?.data || authState?.user;
   const user = userData?.user;
+  const { profile: vetProfile, loading, error } = useSelector((state) => state.vetProfile);
 
   const [availability, setAvailability] = useState('available');
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
+
+  useEffect(() => {
+    dispatch(fetchVetProfile());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (vetProfile?.status) {
+      const normalizedStatus = vetProfile.status.toLowerCase();
+      setAvailability(normalizedStatus === 'busy' ? 'unavailable' : normalizedStatus);
+    }
+  }, [vetProfile]);
 
   const handleStatusClick = (status) => {
     if (status === availability) return;
@@ -18,105 +34,145 @@ export default function VetProfilePage() {
 
   const confirmStatusChange = () => {
     setAvailability(pendingStatus);
+    dispatch(updateVetStatus(pendingStatus));
+
     setShowStatusModal(false);
     setPendingStatus(null);
   };
 
   const statusConfig = {
     available: { label: 'Available', color: 'bg-green-100 text-green-700 border-green-300', dot: 'bg-green-500' },
+    Available: { label: 'Available', color: 'bg-green-100 text-green-700 border-green-300', dot: 'bg-green-500' },
     unavailable: { label: 'Unavailable', color: 'bg-red-100 text-red-700 border-red-300', dot: 'bg-red-500' },
+    Unavailable: { label: 'Unavailable', color: 'bg-red-100 text-red-700 border-red-300', dot: 'bg-red-500' },
+    busy: { label: 'Unavailable', color: 'bg-red-100 text-red-700 border-red-300', dot: 'bg-red-500' },
+    Busy: { label: 'Unavailable', color: 'bg-red-100 text-red-700 border-red-300', dot: 'bg-red-500' },
+  };
+
+  const formatJoinedDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-white rounded-2xl shadow-lg p-16 text-center mb-6">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading profile...</p>
+        </div>
+      )}
+
       {/* Profile Header */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          {/* Avatar */}
-          <div className="w-32 h-32 bg-linear-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg shrink-0">
-            <span className="text-white font-bold text-5xl">
-              {user?.name?.charAt(0)?.toUpperCase() || 'V'}
-            </span>
+      {!loading && (
+        <>
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+              {/* Avatar */}
+              <div className="w-32 h-32 bg-linear-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg shrink-0">
+                <span className="text-white font-bold text-5xl">
+                  {vetProfile?.users?.name?.charAt(0)?.toUpperCase() || 
+                   user?.name?.charAt(0)?.toUpperCase() || 'V'}
+                </span>
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 text-center md:text-left">
+                <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-800">
+                    {vetProfile?.users?.name || user?.name || 'Veterinarian Name'}
+                  </h1>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${(statusConfig[availability] || statusConfig['available']).color} w-fit mx-auto md:mx-0`}>
+                    <span className={`w-2 h-2 rounded-full ${(statusConfig[availability] || statusConfig['available']).dot}`}></span>
+                    {(statusConfig[availability] || statusConfig['available']).label}
+                  </span>
+                </div>
+                <p className="text-gray-500 mb-1">
+                  {vetProfile?.users?.email || user?.email || 'vet@example.com'}
+                </p>
+                <p className="text-sm text-blue-600 font-semibold mb-1">Veterinarian</p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Expertise: {vetProfile?.specialization || 'Small Animal Surgery & General Medicine'}
+                </p>
+                <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
+                  Edit Profile
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Info */}
-          <div className="flex-1 text-center md:text-left">
-            <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-800">{user?.name || 'Veterinarian Name'}</h1>
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${statusConfig[availability].color} w-fit mx-auto md:mx-0`}>
-                <span className={`w-2 h-2 rounded-full ${statusConfig[availability].dot}`}></span>
-                {statusConfig[availability].label}
-              </span>
+          {/* Manage Availability */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-1">Manage Availability</h2>
+            <p className="text-sm text-gray-500 mb-5">Set your current availability status so customers know when to book you.</p>
+            <div className="flex gap-4">
+              {[
+                { key: 'available', ...statusConfig.available },
+                { key: 'unavailable', ...statusConfig.unavailable },
+              ].map(({ key, label, color, dot }) => (
+                <button
+                  key={key}
+                  onClick={() => handleStatusClick(key)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold text-sm transition-all ${
+                    availability === key
+                      ? `${color} border-current shadow-sm`
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-gray-50'
+                  }`}
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full ${availability === key ? dot : 'bg-gray-400'}`}></span>
+                  {label}
+                </button>
+              ))}
             </div>
-            <p className="text-gray-500 mb-1">{user?.email || 'vet@example.com'}</p>
-            <p className="text-sm text-blue-600 font-semibold mb-1">Veterinarian</p>
-            <p className="text-sm text-gray-500 mb-4">Expertise: Small Animal Surgery & General Medicine</p>
-            <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
-              Edit Profile
-            </button>
           </div>
-        </div>
-      </div>
 
-      {/* Manage Availability */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-1">Manage Availability</h2>
-        <p className="text-sm text-gray-500 mb-5">Set your current availability status so customers know when to book you.</p>
-        <div className="flex gap-4">
-          {Object.entries(statusConfig).map(([key, val]) => (
-            <button
-              key={key}
-              onClick={() => handleStatusClick(key)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold text-sm transition-all ${
-                availability === key
-                  ? `${val.color} border-current shadow-sm`
-                  : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-gray-50'
-              }`}
-            >
-              <span className={`w-2.5 h-2.5 rounded-full ${availability === key ? val.dot : 'bg-gray-400'}`}></span>
-              {val.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Professional Details */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-5">Professional Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[
-            { label: 'Speciality', value: 'Veterinarian' },
-            { label: 'Expertise', value: 'Small Animal Surgery' },
-            { label: 'Experience', value: '8 Years' },
-            { label: 'Rating', value: '4.9 / 5.0' },
-            { label: 'Total Appointments', value: '214' },
-            { label: 'Joined', value: 'March 10, 2024' },
-          ].map(item => (
-            <div key={item.label} className="border border-gray-100 rounded-xl p-4 bg-gray-50">
-              <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wide">{item.label}</p>
-              <p className="text-gray-800 font-semibold">{item.value}</p>
+          {/* Professional Details */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-5">Professional Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                { label: 'Speciality', value: 'Veterinarian' },
+                { label: 'Expertise', value: vetProfile?.specialization || 'Small Animal Surgery' },
+                { label: 'Experience', value: vetProfile?.experienceYears ? `${vetProfile.experienceYears} Years` : 'N/A' },
+                { label: 'Joined', value: formatJoinedDate(vetProfile?.createdAt) },
+              ].map(item => (
+                <div key={item.label} className="border border-gray-100 rounded-xl p-4 bg-gray-50">
+                  <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wide">{item.label}</p>
+                  <p className="text-gray-800 font-semibold">{item.value}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Contact Info */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-5">Contact Information</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[
-            { label: 'Email', value: user?.email || 'vet@example.com' },
-            { label: 'Phone', value: user?.phone || '+1 234 567 9001' },
-            { label: 'Clinic Location', value: 'New York, NY' },
-            { label: 'Working Hours', value: 'Mon – Fri, 8:00 AM – 5:00 PM' },
-          ].map(item => (
-            <div key={item.label} className="border border-gray-100 rounded-xl p-4 bg-gray-50">
-              <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wide">{item.label}</p>
-              <p className="text-gray-800 font-semibold">{item.value}</p>
+          {/* Contact Info */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-5">Contact Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                { label: 'Email', value: vetProfile?.users?.email || user?.email || 'vet@example.com' },
+                { label: 'Phone', value: vetProfile?.users?.phone || user?.phone || '+1 234 567 9001' },
+              ].map(item => (
+                <div key={item.label} className="border border-gray-100 rounded-xl p-4 bg-gray-50">
+                  <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wide">{item.label}</p>
+                  <p className="text-gray-800 font-semibold">{item.value}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
       {/* Status Confirm Modal */}
       {showStatusModal && (
@@ -137,7 +193,7 @@ export default function VetProfilePage() {
               <p className="text-sm text-gray-700">
                 Are you sure you want to set your status to{' '}
                 <span className={`font-bold ${pendingStatus === 'available' ? 'text-green-600' : 'text-red-600'}`}>
-                  {statusConfig[pendingStatus]?.label}
+                  {(statusConfig[pendingStatus] || statusConfig['available']).label}
                 </span>?
               </p>
             </div>

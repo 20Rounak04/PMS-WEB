@@ -1,13 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, CalendarDays, ClipboardCheck, Users, X } from 'lucide-react';
+import { fetchNotifications } from '../../../thunks/getNotificationsThunk';
 import animalGroomingImg from '../../../assets/animalgrooming.jpg';
 import groomingImg from '../../../assets/grooming.jpg';
 import veterinarianImg from '../../../assets/veterinarian_2.jpg';
 
+const formatTimeAgo = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleDateString();
+};
+
 export default function HomePage() {
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const { notifications } = useSelector((state) => state.notifications);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const navigate = useNavigate();
@@ -37,9 +56,14 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    dispatch(fetchNotifications());
+  }, [dispatch]);
+
   const goToSlide = (index) => setCurrentSlide(index);
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  const recentNotifications = notifications.slice(0, 3);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -131,20 +155,30 @@ export default function HomePage() {
 
       {/* Notifications Section */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Notifications</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Notifications</h2>
         <div className="space-y-3">
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="font-semibold text-gray-800">Appointment Reminder</p>
-            <p className="text-sm text-gray-600">Your appointment with Dr. Smith is scheduled for tomorrow at 10:00 AM</p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="font-semibold text-gray-800">Test Results Available</p>
-            <p className="text-sm text-gray-600">Your recent lab test results are now available for review</p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="font-semibold text-gray-800">System Notice</p>
-            <p className="text-sm text-gray-600">Platform maintenance scheduled for this weekend from 2:00 AM to 4:00 AM</p>
-          </div>
+          {recentNotifications.length === 0 ? (
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+              <p className="text-sm text-gray-500">No notifications at the moment</p>
+            </div>
+          ) : (
+            recentNotifications.map((notification) => (
+              <div key={notification.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800">{notification.title}</p>
+                    <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                  </div>
+                  {!notification.read && (
+                    <span className="ml-2 w-2 h-2 rounded-full bg-indigo-500 mt-1.5"></span>
+                  )}
+                </div>
+                <p className="text-xs text-indigo-400 mt-2 font-medium">
+                  {formatTimeAgo(notification.createdAt)}
+                </p>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
