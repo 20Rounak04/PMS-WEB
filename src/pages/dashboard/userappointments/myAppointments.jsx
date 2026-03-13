@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchUpcomingAppointments } from '../../../thunks/getUpcomingAppointmentThunk';
 import { fetchCompletedAppointments } from '../../../thunks/getCompletedAppointmentThunk';
 import { fetchCancelledAppointments } from '../../../thunks/getCancelledAppointmentThunk';
+import { rescheduleAppointment, cancelAppointment } from '../../../thunks/rescheduleAppointmentThunk';
+import { clearRescheduleState } from '../../../feature/rescheduleAppointmentSlice';
 import { Search, AlertTriangle, Star, CalendarDays, Clock, User, FileText, CalendarX } from 'lucide-react';
 
 function resolveUserId(user) {
@@ -37,6 +39,86 @@ function getInitialsFromName(fullName) {
   return `${firstInitial}${last[0]}`.toUpperCase();
 }
 
+function RescheduleModal({ appointment, onClose, onSave, isSaving }) {
+  const [formData, setFormData] = useState({
+    appointmentDate: appointment.date || '',
+    time: appointment.time || '',
+  });
+
+  const handleSave = () => {
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+            <CalendarDays className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Reschedule Appointment</h3>
+            <p className="text-sm text-gray-500">{appointment.type}</p>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4 mb-5">
+          <p className="text-sm text-gray-800 font-semibold mb-1">{appointment.professional.name}</p>
+          <p className="text-sm text-gray-600">Pet: {appointment.petName}</p>
+        </div>
+
+        <div className="space-y-4 mb-5">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Appointment Date</label>
+            <input
+              type="date"
+              value={formData.appointmentDate}
+              onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
+              min={new Date().toISOString().split('T')[0]}
+              disabled={isSaving}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Appointment Time</label>
+            <input
+              type="time"
+              value={formData.time}
+              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+              disabled={isSaving}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={isSaving}
+            className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving || !formData.appointmentDate || !formData.time}
+            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isSaving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Saving...
+              </>
+            ) : (
+              'Reschedule'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MyAppointmentsPage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -44,6 +126,7 @@ export default function MyAppointmentsPage() {
   const upcomingState = useSelector((state) => state.upcomingAppointments) || {};
   const completedState = useSelector((state) => state.completedAppointments) || {};
   const cancelledState = useSelector((state) => state.cancelledAppointments) || {};
+  const { loading: rescheduleLoading, error: rescheduleError, success: rescheduleSuccess } = useSelector((state) => state.rescheduleAppointment);
 
   const upcomingAppointments = upcomingState.appointments || [];
   const upcomingLoading = upcomingState.loading || false;
@@ -60,7 +143,9 @@ export default function MyAppointmentsPage() {
   const [selectedTab, setSelectedTab] = useState('upcoming');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     const userId = resolveUserId(user);
@@ -72,6 +157,32 @@ export default function MyAppointmentsPage() {
     dispatch(fetchCompletedAppointments(userId));
     dispatch(fetchCancelledAppointments(userId));
   }, [dispatch, user]);
+
+  // Handle success message
+  useEffect(() => {
+    if (rescheduleSuccess) {
+      const userId = resolveUserId(user);
+      if (userId) {
+        // Refresh appointments after successful reschedule/cancel
+        dispatch(fetchUpcomingAppointments(userId));
+        dispatch(fetchCompletedAppointments(userId));
+        dispatch(fetchCancelledAppointments(userId));
+      }
+
+      setSuccessMessage('Appointment updated successfully!');
+      setShowRescheduleModal(false);
+      setShowCancelModal(false);
+      setSelectedAppointment(null);
+
+      // Clear success message after 3 seconds
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+        dispatch(clearRescheduleState());
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [rescheduleSuccess, dispatch, user]);
 
   const appointmentsByTab = {
     upcoming: Array.isArray(upcomingAppointments) ? upcomingAppointments : [],
@@ -158,20 +269,46 @@ export default function MyAppointmentsPage() {
   };
 
   const confirmCancel = async () => {
+    if (!selectedAppointment?.id) {
+      console.error('No appointment selected for cancellation');
+      return;
+    }
+
     try {
-      const userId = resolveUserId(user);
-      if (userId) {
-        await dispatch(fetchUpcomingAppointments(userId));
-        await dispatch(fetchCancelledAppointments(userId));
-      }
-      setShowCancelModal(false);
-      setSelectedAppointment(null);
+      await dispatch(cancelAppointment({
+        appointmentId: selectedAppointment.id,
+      })).unwrap();
     } catch (error) {
       console.error('Failed to cancel appointment:', error);
     }
   };
 
-  const handleReschedule = (appointment) => {};
+  const handleReschedule = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowRescheduleModal(true);
+  };
+
+  const confirmReschedule = async (formData) => {
+    if (!selectedAppointment?.id) {
+      console.error('No appointment selected for rescheduling');
+      return;
+    }
+
+    if (!formData.appointmentDate || !formData.time) {
+      alert('Please select both date and time');
+      return;
+    }
+
+    try {
+      await dispatch(rescheduleAppointment({
+        appointmentId: selectedAppointment.id,
+        appointmentDate: formData.appointmentDate,
+        time: formData.time,
+      })).unwrap();
+    } catch (error) {
+      console.error('Failed to reschedule appointment:', error);
+    }
+  };
 
   const isLoading =
     (selectedTab === 'upcoming' && upcomingLoading) ||
@@ -185,6 +322,34 @@ export default function MyAppointmentsPage() {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">My Appointments</h1>
         <p className="text-gray-600">View and manage your scheduled appointments</p>
       </div>
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      {/* Reschedule Error Message */}
+      {rescheduleError && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <span>{rescheduleError}</span>
+          <button 
+            onClick={() => dispatch(clearRescheduleState())}
+            className="ml-auto text-red-500 hover:text-red-700"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
@@ -256,7 +421,7 @@ export default function MyAppointmentsPage() {
               <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                 {/* Professional Info */}
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-16 h-16 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
                     {appointment.professional.avatar}
                   </div>
                   <div className="flex-1">
@@ -303,17 +468,19 @@ export default function MyAppointmentsPage() {
                       : 'Unknown'}
                   </span>
 
-                  {selectedTab === 'upcoming' && (
+                  {selectedTab === 'upcoming' && appointment.status === 'pending' && (
                     <div className="flex flex-col gap-2 w-full lg:w-auto">
                       <button
                         onClick={() => handleReschedule(appointment)}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm"
+                        disabled={rescheduleLoading}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Reschedule
                       </button>
                       <button
                         onClick={() => handleCancelAppointment(appointment)}
-                        className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-colors font-semibold text-sm"
+                        disabled={rescheduleLoading}
+                        className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-colors font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Cancel
                       </button>
@@ -350,6 +517,19 @@ export default function MyAppointmentsPage() {
         </div>
       )}
 
+      {/* Reschedule Modal */}
+      {showRescheduleModal && selectedAppointment && (
+        <RescheduleModal
+          appointment={selectedAppointment}
+          onClose={() => {
+            setShowRescheduleModal(false);
+            setSelectedAppointment(null);
+          }}
+          onSave={confirmReschedule}
+          isSaving={rescheduleLoading}
+        />
+      )}
+
       {/* Cancel Confirmation Modal */}
       {showCancelModal && selectedAppointment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -374,16 +554,28 @@ export default function MyAppointmentsPage() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowCancelModal(false); setSelectedAppointment(null); }}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                onClick={() => { 
+                  setShowCancelModal(false); 
+                  setSelectedAppointment(null); 
+                }}
+                disabled={rescheduleLoading}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Keep Appointment
               </button>
               <button
                 onClick={confirmCancel}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                disabled={rescheduleLoading}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Yes, Cancel
+                {rescheduleLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Cancelling...
+                  </>
+                ) : (
+                  'Yes, Cancel'
+                )}
               </button>
             </div>
           </div>
