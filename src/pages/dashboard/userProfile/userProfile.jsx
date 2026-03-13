@@ -1,15 +1,34 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getUserDetailsThunk } from '../../../thunks/getUserDetailsThunk';
-import { AlertCircle, Smile, PawPrint } from 'lucide-react';
+import { updateUserProfileThunk } from '../../../thunks/updateUserProfileThunk';
+import { clearUpdateState } from '../../../feature/updateUserProfileSlice';
+import { AlertCircle, Smile, PawPrint, X, Edit2 } from 'lucide-react';
 
 export default function UserProfile() {
   const dispatch = useDispatch();
   const authState = useSelector((state) => state.auth);
   const { userDetails, loading, error } = useSelector((state) => state.userDetails);
+  const updateState = useSelector((state) => state.updateUserProfile);
 
   const user = authState?.user?.user;
   const petFromAuth = authState?.user?.pet;
+
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showPetModal, setShowPetModal] = useState(false);
+  const [selectedPet, setSelectedPet] = useState(null);
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    email: '',
+  });
+  const [petFormData, setPetFormData] = useState({
+    name: '',
+    age: '',
+    gender: '',
+    weight: '',
+    description: '',
+    medicalHistory: '',
+  });
 
   useEffect(() => {
     if (user?.id && petFromAuth?.id) {
@@ -17,8 +36,77 @@ export default function UserProfile() {
     }
   }, [dispatch, user?.id, petFromAuth?.id]);
 
+  useEffect(() => {
+    if (updateState.success) {
+      setShowUserModal(false);
+      setShowPetModal(false);
+      setSelectedPet(null);
+      dispatch(clearUpdateState());
+      if (user?.id && petFromAuth?.id) {
+        dispatch(getUserDetailsThunk({ userId: user.id, petId: petFromAuth.id }));
+      }
+    }
+  }, [updateState.success, dispatch, user?.id, petFromAuth?.id]);
+
   const pets = userDetails?.pets || [];
   const userName = userDetails?.name || user?.name || user?.email;
+
+  const handleEditUser = () => {
+    setUserFormData({
+      name: userDetails?.name || user?.name || '',
+      email: userDetails?.email || user?.email || '',
+    });
+    setShowUserModal(true);
+  };
+
+  const handleEditPet = (pet) => {
+    setSelectedPet(pet);
+    setPetFormData({
+      name: pet.name || '',
+      age: pet.age || '',
+      gender: pet.gender || '',
+      weight: pet.weight || '',
+      description: pet.description || '',
+      medicalHistory: pet.medicalHistory || '',
+    });
+    setShowPetModal(true);
+  };
+
+  const handleUserSubmit = (e) => {
+    e.preventDefault();
+    dispatch(updateUserProfileThunk({
+      name: userFormData.name,
+      email: userFormData.email,
+    }));
+  };
+
+  const handlePetSubmit = (e) => {
+    e.preventDefault();
+    const payload = {
+      petId: selectedPet.id,
+      breedId: selectedPet.breeds?.id,
+      pet: {
+        name: petFormData.name,
+        age: parseInt(petFormData.age) || undefined,
+        gender: petFormData.gender,
+        weight: parseFloat(petFormData.weight) || undefined,
+        description: petFormData.description,
+        medicalHistory: petFormData.medicalHistory,
+      },
+    };
+    dispatch(updateUserProfileThunk(payload));
+  };
+
+  const closeUserModal = () => {
+    setShowUserModal(false);
+    dispatch(clearUpdateState());
+  };
+
+  const closePetModal = () => {
+    setShowPetModal(false);
+    setSelectedPet(null);
+    dispatch(clearUpdateState());
+  };
 
   if (loading) {
     return (
@@ -67,7 +155,11 @@ export default function UserProfile() {
             <p className="text-sm text-indigo-600 font-semibold mb-4 capitalize">
               {userDetails?.roles?.name || user?.roleName || 'User'}
             </p>
-            <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+            <button
+              onClick={handleEditUser}
+              className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors inline-flex items-center gap-2"
+            >
+              <Edit2 className="w-4 h-4" />
               Edit Profile
             </button>
           </div>
@@ -121,9 +213,17 @@ export default function UserProfile() {
 
                   {/* Pet Info */}
                   <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-3">
-                      {pet.name || 'Unnamed Pet'}
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xl font-bold text-gray-800">
+                        {pet.name || 'Unnamed Pet'}
+                      </h3>
+                      <button
+                        onClick={() => handleEditPet(pet)}
+                        className="text-indigo-600 hover:text-indigo-700 p-2 hover:bg-indigo-50 rounded-lg transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </div>
 
                     <div className="space-y-2">
                       <div className="flex justify-between">
@@ -193,6 +293,211 @@ export default function UserProfile() {
           </div>
         )}
       </div>
+
+      {/* Edit User Modal */}
+      {showUserModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800">Edit Profile</h2>
+              <button
+                onClick={closeUserModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUserSubmit} className="p-6">
+              {updateState.error && (
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                    <p className="text-sm text-red-600">{updateState.error}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={userFormData.name}
+                    onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Enter your name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={userFormData.email}
+                    onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Enter your email"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={closeUserModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={updateState.loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={updateState.loading}
+                >
+                  {updateState.loading ? 'Updating...' : 'Update Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Pet Modal */}
+      {showPetModal && selectedPet && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800">Edit Pet</h2>
+              <button
+                onClick={closePetModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePetSubmit} className="p-6">
+              {updateState.error && (
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                    <p className="text-sm text-red-600">{updateState.error}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={petFormData.name}
+                    onChange={(e) => setPetFormData({ ...petFormData, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Pet name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Age (years)
+                  </label>
+                  <input
+                    type="number"
+                    value={petFormData.age}
+                    onChange={(e) => setPetFormData({ ...petFormData, age: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Age"
+                    min="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Gender
+                  </label>
+                  <select
+                    value={petFormData.gender}
+                    onChange={(e) => setPetFormData({ ...petFormData, gender: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  >
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Weight (kg)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={petFormData.weight}
+                    onChange={(e) => setPetFormData({ ...petFormData, weight: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Weight"
+                    min="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={petFormData.description}
+                    onChange={(e) => setPetFormData({ ...petFormData, description: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none"
+                    placeholder="Pet description"
+                    rows="3"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Medical History
+                  </label>
+                  <textarea
+                    value={petFormData.medicalHistory}
+                    onChange={(e) => setPetFormData({ ...petFormData, medicalHistory: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none"
+                    placeholder="Medical history"
+                    rows="3"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={closePetModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={updateState.loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={updateState.loading}
+                >
+                  {updateState.loading ? 'Updating...' : 'Update Pet'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVetProfile } from '../../../thunks/getVetProfileThunk';
-import { updateVetStatus } from '../../../feature/getVetProfileSlice';
+import { updateVetProfileThunk } from '../../../thunks/updateVetProfileThunk';
+import { clearUpdateVetState } from '../../../feature/updateVetProfileSlice';
+import { AlertCircle, X, Edit2 } from 'lucide-react';
 
 export default function VetProfilePage() {
   const dispatch = useDispatch();
@@ -10,10 +12,19 @@ export default function VetProfilePage() {
   const userData = authState?.user?.data || authState?.user;
   const user = userData?.user;
   const { profile: vetProfile, loading, error } = useSelector((state) => state.vetProfile);
+  const updateState = useSelector((state) => state.updateVetProfile);
 
   const [availability, setAvailability] = useState('available');
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    specialization: '',
+    experienceYears: '',
+  });
 
   useEffect(() => {
     dispatch(fetchVetProfile());
@@ -26,6 +37,17 @@ export default function VetProfilePage() {
     }
   }, [vetProfile]);
 
+  useEffect(() => {
+    if (updateState.success) {
+      setShowStatusModal(false);
+      setShowEditModal(false);
+      setPendingStatus(null);
+      dispatch(clearUpdateVetState());
+      // Refresh profile
+      dispatch(fetchVetProfile());
+    }
+  }, [updateState.success, dispatch]);
+
   const handleStatusClick = (status) => {
     if (status === availability) return;
     setPendingStatus(status);
@@ -33,11 +55,42 @@ export default function VetProfilePage() {
   };
 
   const confirmStatusChange = () => {
-    setAvailability(pendingStatus);
-    dispatch(updateVetStatus(pendingStatus));
+    const statusValue = pendingStatus === 'unavailable' ? 'busy' : pendingStatus;
+    dispatch(updateVetProfileThunk({ status: statusValue }));
+  };
 
+  const handleEditProfile = () => {
+    setEditFormData({
+      name: vetProfile?.users?.name || user?.name || '',
+      email: vetProfile?.users?.email || user?.email || '',
+      phone: vetProfile?.users?.phone || user?.phone || '',
+      specialization: vetProfile?.specialization || '',
+      experienceYears: vetProfile?.experienceYears || '',
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    const payload = {
+      name: editFormData.name,
+      email: editFormData.email,
+      phone: editFormData.phone,
+      specialization: editFormData.specialization,
+      experienceYears: parseInt(editFormData.experienceYears) || undefined,
+    };
+    dispatch(updateVetProfileThunk(payload));
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    dispatch(clearUpdateVetState());
+  };
+
+  const closeStatusModal = () => {
     setShowStatusModal(false);
     setPendingStatus(null);
+    dispatch(clearUpdateVetState());
   };
 
   const statusConfig = {
@@ -81,7 +134,7 @@ export default function VetProfilePage() {
           <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               {/* Avatar */}
-              <div className="w-32 h-32 bg-linear-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg shrink-0">
+              <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg shrink-0">
                 <span className="text-white font-bold text-5xl">
                   {vetProfile?.users?.name?.charAt(0)?.toUpperCase() || 
                    user?.name?.charAt(0)?.toUpperCase() || 'V'}
@@ -106,7 +159,11 @@ export default function VetProfilePage() {
                 <p className="text-sm text-gray-500 mb-4">
                   Expertise: {vetProfile?.specialization || 'Small Animal Surgery & General Medicine'}
                 </p>
-                <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
+                <button 
+                  onClick={handleEditProfile}
+                  className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors font-semibold inline-flex items-center gap-2"
+                >
+                  <Edit2 className="w-4 h-4" />
                   Edit Profile
                 </button>
               </div>
@@ -125,7 +182,8 @@ export default function VetProfilePage() {
                 <button
                   key={key}
                   onClick={() => handleStatusClick(key)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold text-sm transition-all ${
+                  disabled={updateState.loading}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                     availability === key
                       ? `${color} border-current shadow-sm`
                       : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-gray-50'
@@ -174,6 +232,120 @@ export default function VetProfilePage() {
         </>
       )}
 
+      {/* Edit Profile Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800">Edit Profile</h2>
+              <button
+                onClick={closeEditModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="p-6">
+              {updateState.error && (
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                    <p className="text-sm text-red-600">{updateState.error}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Enter your name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={editFormData.email}
+                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Enter your email"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={editFormData.phone}
+                    onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Enter your phone number"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Specialization
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.specialization}
+                    onChange={(e) => setEditFormData({ ...editFormData, specialization: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="e.g., Small Animal Surgery"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Experience (Years)
+                  </label>
+                  <input
+                    type="number"
+                    value={editFormData.experienceYears}
+                    onChange={(e) => setEditFormData({ ...editFormData, experienceYears: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Years of experience"
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={updateState.loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={updateState.loading}
+                >
+                  {updateState.loading ? 'Updating...' : 'Update Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Status Confirm Modal */}
       {showStatusModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -189,6 +361,16 @@ export default function VetProfilePage() {
                 <p className="text-sm text-gray-500">Update your availability</p>
               </div>
             </div>
+
+            {updateState.error && (
+              <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                  <p className="text-sm text-red-600">{updateState.error}</p>
+                </div>
+              </div>
+            )}
+
             <div className="bg-gray-50 rounded-xl p-4 mb-5">
               <p className="text-sm text-gray-700">
                 Are you sure you want to set your status to{' '}
@@ -198,13 +380,19 @@ export default function VetProfilePage() {
               </p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setShowStatusModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-sm">
+              <button 
+                onClick={closeStatusModal}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-sm"
+                disabled={updateState.loading}
+              >
                 Cancel
               </button>
-              <button onClick={confirmStatusChange}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm">
-                Confirm
+              <button 
+                onClick={confirmStatusChange}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={updateState.loading}
+              >
+                {updateState.loading ? 'Updating...' : 'Confirm'}
               </button>
             </div>
           </div>
