@@ -134,7 +134,7 @@ export default function VetProfilePage() {
           <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               {/* Avatar */}
-              <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg shrink-0">
+              <div className="w-32 h-32 bg-linear-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg shrink-0">
                 <span className="text-white font-bold text-5xl">
                   {vetProfile?.users?.name?.charAt(0)?.toUpperCase() || 
                    user?.name?.charAt(0)?.toUpperCase() || 'V'}
