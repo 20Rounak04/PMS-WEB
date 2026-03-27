@@ -5,7 +5,15 @@ import { fetchCompletedAppointments } from '../../../thunks/getCompletedAppointm
 import { fetchCancelledAppointments } from '../../../thunks/getCancelledAppointmentThunk';
 import { rescheduleAppointment, cancelAppointment } from '../../../thunks/rescheduleAppointmentThunk';
 import { clearRescheduleState } from '../../../feature/rescheduleAppointmentSlice';
-import { Search, AlertTriangle, Star, CalendarDays, Clock, User, FileText, CalendarX } from 'lucide-react';
+import { initiatePayment } from '../../../thunks/makePaymentThunk';
+import { clearPaymentState } from '../../../feature/makePaymentSlice';
+import { verifyKhaltiPayment } from '../../../thunks/verifyPaymentThunk';
+import { clearVerifyState } from '../../../feature/verifyPaymentSlice';
+import {
+  Search, AlertTriangle, Star, CalendarDays, Clock,
+  User, FileText, CalendarX, CreditCard, Wallet,
+  Banknote, CheckCircle, XCircle, Loader,
+} from 'lucide-react';
 
 function resolveUserId(user) {
   if (!user) return null;
@@ -39,15 +47,190 @@ function getInitialsFromName(fullName) {
   return `${firstInitial}${last[0]}`.toUpperCase();
 }
 
+function VerificationBanner({ status, message, onDismiss }) {
+  if (status === 'verifying') {
+    return (
+      <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg flex items-center gap-3">
+        <Loader className="w-5 h-5 animate-spin shrink-0" />
+        <span className="font-medium">Verifying your Khalti payment, please wait...</span>
+      </div>
+    );
+  }
+  if (status === 'success') {
+    return (
+      <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-3">
+        <CheckCircle className="w-5 h-5 shrink-0" />
+        <div className="flex-1">
+          <p className="font-semibold">Payment Verified Successfully!</p>
+          {message && <p className="text-sm mt-0.5">{message}</p>}
+        </div>
+        <button onClick={onDismiss} className="ml-auto text-green-500 hover:text-green-700">
+          <XCircle className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+  if (status === 'failed') {
+    return (
+      <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-3">
+        <XCircle className="w-5 h-5 shrink-0" />
+        <div className="flex-1">
+          <p className="font-semibold">Payment Verification Failed</p>
+          {message && <p className="text-sm mt-0.5">{message}</p>}
+        </div>
+        <button onClick={onDismiss} className="ml-auto text-red-500 hover:text-red-700">
+          <XCircle className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+  return null;
+}
+
+// ─── Payment Modal ────────────────────────────────────────────────────────────
+function PaymentModal({ appointment, onClose, onPaymentInitiated }) {
+  const [selectedPayment, setSelectedPayment] = useState(null);
+
+  const handlePayment = () => {
+    if (!selectedPayment) {
+      alert('Please select a payment method');
+      return;
+    }
+    onPaymentInitiated(selectedPayment);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-12 h-12 rounded-full bg-linear-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+            <CreditCard className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Make Payment</h3>
+            <p className="text-sm text-gray-500">Complete your appointment payment</p>
+          </div>
+        </div>
+
+        {/* Appointment Summary */}
+        <div className="bg-linear-to-br from-indigo-50 to-purple-50 rounded-xl p-4 mb-5 border border-indigo-100">
+          <div className="flex items-start justify-between mb-2">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">{appointment.type}</p>
+              <p className="text-xs text-gray-600 mt-0.5">{appointment.professional.name}</p>
+              <p className="text-xs text-gray-500">Pet: {appointment.petName}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-500">Amount</p>
+              <p className="text-2xl font-bold text-indigo-600">Rs. {appointment.amount || 1500}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Methods */}
+        <div className="mb-5">
+          <label className="block text-sm font-semibold text-gray-700 mb-3">Select Payment Method</label>
+          <div className="space-y-3">
+            {/* Khalti */}
+            <button
+              onClick={() => setSelectedPayment('khalti')}
+              className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                selectedPayment === 'khalti'
+                  ? 'border-purple-500 bg-purple-50 shadow-md'
+                  : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                  selectedPayment === 'khalti' ? 'bg-purple-600' : 'bg-purple-100'
+                }`}>
+                  <Wallet className={`w-6 h-6 ${selectedPayment === 'khalti' ? 'text-white' : 'text-purple-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-800 flex items-center gap-2">
+                    Khalti
+                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Digital</span>
+                  </p>
+                  <p className="text-xs text-gray-600">Pay with Khalti wallet</p>
+                </div>
+                {selectedPayment === 'khalti' && (
+                  <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </button>
+
+            {/* Cash */}
+            <button
+              onClick={() => setSelectedPayment('cash')}
+              className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                selectedPayment === 'cash'
+                  ? 'border-green-500 bg-green-50 shadow-md'
+                  : 'border-gray-200 hover:border-green-300 hover:bg-green-50/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                  selectedPayment === 'cash' ? 'bg-green-600' : 'bg-green-100'
+                }`}>
+                  <Banknote className={`w-6 h-6 ${selectedPayment === 'cash' ? 'text-white' : 'text-green-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-800 flex items-center gap-2">
+                    Cash Payment
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">On Visit</span>
+                  </p>
+                  <p className="text-xs text-gray-600">Pay cash during appointment</p>
+                </div>
+                {selectedPayment === 'cash' && (
+                  <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors font-semibold"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handlePayment}
+            disabled={!selectedPayment}
+            className="flex-1 px-4 py-3 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
+          >
+            <CreditCard className="w-5 h-5" />
+            Proceed to Pay
+          </button>
+        </div>
+
+        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          Secure payment gateway
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RescheduleModal({ appointment, onClose, onSave, isSaving }) {
   const [formData, setFormData] = useState({
     appointmentDate: appointment.date || '',
     time: appointment.time || '',
   });
-
-  const handleSave = () => {
-    onSave(formData);
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -100,13 +283,13 @@ function RescheduleModal({ appointment, onClose, onSave, isSaving }) {
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            onClick={() => onSave(formData)}
             disabled={isSaving || !formData.appointmentDate || !formData.time}
             className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isSaving ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Saving...
               </>
             ) : (
@@ -126,7 +309,21 @@ export default function MyAppointmentsPage() {
   const upcomingState = useSelector((state) => state.upcomingAppointments) || {};
   const completedState = useSelector((state) => state.completedAppointments) || {};
   const cancelledState = useSelector((state) => state.cancelledAppointments) || {};
-  const { loading: rescheduleLoading, error: rescheduleError, success: rescheduleSuccess } = useSelector((state) => state.rescheduleAppointment);
+  const {
+    loading: rescheduleLoading,
+    error: rescheduleError,
+    success: rescheduleSuccess,
+  } = useSelector((state) => state.rescheduleAppointment);
+  const {
+    loading: paymentLoading,
+    error: paymentError,
+    success: paymentSuccess,
+    paymentData,
+  } = useSelector((state) => state.makePayment);
+  const {
+    loading: verifyLoading,
+    error: verifyError,
+  } = useSelector((state) => state.verifyPayment);
 
   const upcomingAppointments = upcomingState.appointments || [];
   const upcomingLoading = upcomingState.loading || false;
@@ -144,13 +341,61 @@ export default function MyAppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  const [verificationStatus, setVerificationStatus] = useState(null); // null | 'verifying' | 'success' | 'failed'
+  const [verificationMessage, setVerificationMessage] = useState('');
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pidxFromUrl = urlParams.get('pidx');
+    const pidxFromStorage = sessionStorage.getItem('khalti_pidx');
+    const pidx = pidxFromUrl || pidxFromStorage;
+
+    if (!pidx) return;
+
+    sessionStorage.removeItem('khalti_pidx');
+
+    if (pidxFromUrl) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    setVerificationStatus('verifying');
+
+    dispatch(verifyKhaltiPayment({ pidx }))
+      .unwrap()
+      .then((data) => {
+        setVerificationStatus('success');
+
+        const userId = resolveUserId(user);
+        if (userId) {
+          dispatch(fetchUpcomingAppointments(userId));
+          dispatch(fetchCompletedAppointments(userId));
+          dispatch(fetchCancelledAppointments(userId));
+        }
+
+        setTimeout(() => {
+          setVerificationStatus(null);
+          setVerificationMessage('');
+          dispatch(clearVerifyState());
+        }, 8000);
+      })
+      .catch((err) => {
+        setVerificationStatus('failed');
+        setVerificationMessage(
+          typeof err === 'string'
+            ? err
+            : err?.message || 'Verification failed. Please contact support.'
+        );
+      });
+  }, [dispatch]);
 
   useEffect(() => {
     const userId = resolveUserId(user);
     if (!userId) {
-      console.warn('[MyAppointmentsPage] userId is null/undefined — appointments will NOT be fetched.');
+      console.warn('[MyAppointmentsPage] userId is null — appointments will NOT be fetched.');
       return;
     }
     dispatch(fetchUpcomingAppointments(userId));
@@ -183,6 +428,37 @@ export default function MyAppointmentsPage() {
       return () => clearTimeout(timer);
     }
   }, [rescheduleSuccess, dispatch, user]);
+
+  useEffect(() => {
+    if (paymentSuccess && paymentData) {
+      const method = paymentData.method;
+
+      if (method === 'khalti' && paymentData.paymentData?.payment_url) {
+        window.location.href = paymentData.paymentData.payment_url;
+        return; 
+      }
+
+      if (method === 'cash') {
+        setSuccessMessage('Cash payment selected. Please pay during your appointment.');
+      }
+
+      setShowPaymentModal(false);
+      setSelectedAppointment(null);
+
+      const userId = resolveUserId(user);
+      if (userId) {
+        dispatch(fetchUpcomingAppointments(userId));
+        dispatch(fetchCompletedAppointments(userId));
+        dispatch(fetchCancelledAppointments(userId));
+      }
+
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+        dispatch(clearPaymentState());
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentSuccess, paymentData, dispatch, user]);
 
   const appointmentsByTab = {
     upcoming: Array.isArray(upcomingAppointments) ? upcomingAppointments : [],
@@ -220,6 +496,7 @@ export default function MyAppointmentsPage() {
       petName: apt.pet?.name || 'Unknown Pet',
       notes: apt.description || '',
       serviceType: apt.serviceType,
+      amount: apt.amount || 1500,
     };
   };
 
@@ -237,17 +514,17 @@ export default function MyAppointmentsPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'confirmed': return 'bg-green-100 text-green-700';
-      case 'pending': return 'bg-yellow-100 text-yellow-700';
+      case 'pending':   return 'bg-yellow-100 text-yellow-700';
       case 'completed': return 'bg-blue-100 text-blue-700';
       case 'cancelled': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default:          return 'bg-gray-100 text-gray-700';
     }
   };
 
   const getTypeIcon = (type) => {
     const t = type.toLowerCase();
     if (t.includes('veterinary') || t.includes('consultation')) return '🏥';
-    if (t.includes('grooming')) return '✂️';
+    if (t.includes('grooming'))    return '✂️';
     if (t.includes('vaccination')) return '💉';
     if (t.includes('checkup') || t.includes('check-up')) return '🩺';
     return '📋';
@@ -269,15 +546,9 @@ export default function MyAppointmentsPage() {
   };
 
   const confirmCancel = async () => {
-    if (!selectedAppointment?.id) {
-      console.error('No appointment selected for cancellation');
-      return;
-    }
-
+    if (!selectedAppointment?.id) return;
     try {
-      await dispatch(cancelAppointment({
-        appointmentId: selectedAppointment.id,
-      })).unwrap();
+      await dispatch(cancelAppointment({ appointmentId: selectedAppointment.id })).unwrap();
     } catch (error) {
       console.error('Failed to cancel appointment:', error);
     }
@@ -289,16 +560,11 @@ export default function MyAppointmentsPage() {
   };
 
   const confirmReschedule = async (formData) => {
-    if (!selectedAppointment?.id) {
-      console.error('No appointment selected for rescheduling');
-      return;
-    }
-
+    if (!selectedAppointment?.id) return;
     if (!formData.appointmentDate || !formData.time) {
       alert('Please select both date and time');
       return;
     }
-
     try {
       await dispatch(rescheduleAppointment({
         appointmentId: selectedAppointment.id,
@@ -310,9 +576,27 @@ export default function MyAppointmentsPage() {
     }
   };
 
+  const handleMakePayment = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowPaymentModal(true);
+  };
+
+  const confirmPayment = async (method) => {
+    if (!selectedAppointment?.id) return;
+    try {
+      await dispatch(initiatePayment({
+        appointmentId: selectedAppointment.id,
+        amount: selectedAppointment.amount || 1500,
+        method,
+      })).unwrap();
+    } catch (error) {
+      console.error('Failed to initiate payment:', error);
+    }
+  };
+
   const isLoading =
-    (selectedTab === 'upcoming' && upcomingLoading) ||
-    (selectedTab === 'past' && completedLoading) ||
+    (selectedTab === 'upcoming'  && upcomingLoading)  ||
+    (selectedTab === 'past'      && completedLoading) ||
     (selectedTab === 'cancelled' && cancelledLoading);
 
   return (
@@ -322,6 +606,17 @@ export default function MyAppointmentsPage() {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">My Appointments</h1>
         <p className="text-gray-600">View and manage your scheduled appointments</p>
       </div>
+
+      {/* Khalti Verification Banner */}
+      <VerificationBanner
+        status={verificationStatus}
+        message={verificationMessage}
+        onDismiss={() => {
+          setVerificationStatus(null);
+          setVerificationMessage('');
+          dispatch(clearVerifyState());
+        }}
+      />
 
       {/* Success Message */}
       {successMessage && (
@@ -340,10 +635,37 @@ export default function MyAppointmentsPage() {
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
           </svg>
           <span>{rescheduleError}</span>
-          <button 
-            onClick={() => dispatch(clearRescheduleState())}
-            className="ml-auto text-red-500 hover:text-red-700"
-          >
+          <button onClick={() => dispatch(clearRescheduleState())} className="ml-auto text-red-500 hover:text-red-700">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Payment Error */}
+      {paymentError && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <span>{paymentError}</span>
+          <button onClick={() => dispatch(clearPaymentState())} className="ml-auto text-red-500 hover:text-red-700">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Verify Error */}
+      {verifyError && verificationStatus !== 'failed' && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <span>{verifyError}</span>
+          <button onClick={() => dispatch(clearVerifyState())} className="ml-auto text-red-500 hover:text-red-700">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
@@ -355,8 +677,8 @@ export default function MyAppointmentsPage() {
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
         <div className="flex items-center gap-4 border-b border-gray-200">
           {[
-            { key: 'upcoming', label: 'Upcoming', count: upcomingAppointments.length },
-            { key: 'past', label: 'Past', count: completedAppointments.length },
+            { key: 'upcoming',  label: 'Upcoming',  count: upcomingAppointments.length },
+            { key: 'past',      label: 'Completed', count: completedAppointments.length },
             { key: 'cancelled', label: 'Cancelled', count: cancelledAppointments.length },
           ].map((tab) => (
             <button
@@ -421,7 +743,7 @@ export default function MyAppointmentsPage() {
               <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                 {/* Professional Info */}
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                  <div className="w-16 h-16 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
                     {appointment.professional.avatar}
                   </div>
                   <div className="flex-1">
@@ -468,8 +790,18 @@ export default function MyAppointmentsPage() {
                       : 'Unknown'}
                   </span>
 
-                  {selectedTab === 'upcoming' && appointment.status === 'pending' && (
+                  {selectedTab === 'upcoming' && (
                     <div className="flex flex-col gap-2 w-full lg:w-auto">
+                      {appointment.status === 'confirmed' && (
+                        <button
+                          onClick={() => handleMakePayment(appointment)}
+                          disabled={paymentLoading || verifyLoading}
+                          className="px-4 py-2 bg-linear-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all font-semibold text-sm flex items-center justify-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          Make Payment
+                        </button>
+                      )}
                       <button
                         onClick={() => handleReschedule(appointment)}
                         disabled={rescheduleLoading}
@@ -517,14 +849,20 @@ export default function MyAppointmentsPage() {
         </div>
       )}
 
+      {/* Payment Modal */}
+      {showPaymentModal && selectedAppointment && (
+        <PaymentModal
+          appointment={selectedAppointment}
+          onClose={() => { setShowPaymentModal(false); setSelectedAppointment(null); }}
+          onPaymentInitiated={confirmPayment}
+        />
+      )}
+
       {/* Reschedule Modal */}
       {showRescheduleModal && selectedAppointment && (
         <RescheduleModal
           appointment={selectedAppointment}
-          onClose={() => {
-            setShowRescheduleModal(false);
-            setSelectedAppointment(null);
-          }}
+          onClose={() => { setShowRescheduleModal(false); setSelectedAppointment(null); }}
           onSave={confirmReschedule}
           isSaving={rescheduleLoading}
         />
@@ -554,10 +892,7 @@ export default function MyAppointmentsPage() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => { 
-                  setShowCancelModal(false); 
-                  setSelectedAppointment(null); 
-                }}
+                onClick={() => { setShowCancelModal(false); setSelectedAppointment(null); }}
                 disabled={rescheduleLoading}
                 className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -570,7 +905,7 @@ export default function MyAppointmentsPage() {
               >
                 {rescheduleLoading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Cancelling...
                   </>
                 ) : (
