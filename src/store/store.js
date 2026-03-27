@@ -28,6 +28,9 @@ import rescheduleAppointmentReducer from '../feature/rescheduleAppointmentSlice'
 import updateUserProfileReducer from '../feature/updateUserProfileSlice';
 import updateVetProfileReducer from '../feature/updateVetProfileSlice';
 import updateGroomerProfileReducer from '../feature/updateGroomerProfileSlice';
+import makePaymentReducer from '../feature/makePaymentSlice';
+import verifyPaymentReducer from '../feature/verifyPaymentSlice';
+
 
 const store = configureStore({
   reducer: {
@@ -60,6 +63,8 @@ const store = configureStore({
     updateUserProfile: updateUserProfileReducer,
     updateVetProfile: updateVetProfileReducer,
     updateGroomerProfile: updateGroomerProfileReducer,
+    makePayment: makePaymentReducer,
+    verifyPayment: verifyPaymentReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
