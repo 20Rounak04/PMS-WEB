@@ -30,7 +30,7 @@ import updateVetProfileReducer from '../feature/updateVetProfileSlice';
 import updateGroomerProfileReducer from '../feature/updateGroomerProfileSlice';
 import makePaymentReducer from '../feature/makePaymentSlice';
 import verifyPaymentReducer from '../feature/verifyPaymentSlice';
-
+import chatBotReducer from '../feature/chatBotSlice';
 
 const store = configureStore({
   reducer: {
@@ -65,6 +65,7 @@ const store = configureStore({
     updateGroomerProfile: updateGroomerProfileReducer,
     makePayment: makePaymentReducer,
     verifyPayment: verifyPaymentReducer,
+    chatBot: chatBotReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, CalendarDays, ClipboardCheck, Users, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, ClipboardCheck, Users, X, Send, Loader2 } from 'lucide-react';
 import { fetchNotifications } from '../../../thunks/getNotificationsThunk';
+import { sendChatMessage } from '../../../thunks/chatBotThunk';
+import { addUserMessage, clearMessages } from '../../../feature/chatBotSlice';
 import animalGroomingImg from '../../../assets/animalgrooming.jpg';
 import groomingImg from '../../../assets/grooming.jpg';
 import veterinarianImg from '../../../assets/veterinarian_2.jpg';
@@ -27,8 +29,11 @@ export default function HomePage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { notifications } = useSelector((state) => state.notifications);
+  const { messages, loading: chatLoading } = useSelector((state) => state.chatBot);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [messageInput, setMessageInput] = useState('');
+  const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
   const slides = [
@@ -60,10 +65,50 @@ export default function HomePage() {
     dispatch(fetchNotifications());
   }, [dispatch]);
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const goToSlide = (index) => setCurrentSlide(index);
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   const recentNotifications = notifications.slice(0, 3);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    
+    if (!messageInput.trim() || chatLoading) return;
+
+    const message = messageInput.trim();
+    setMessageInput('');
+
+    dispatch(addUserMessage(message));
+
+    dispatch(sendChatMessage({ message }));
+  };
+
+  const handleChatOpen = () => {
+    setIsChatOpen(true);
+    if (messages.length === 0) {
+      setTimeout(() => {
+        dispatch(addUserMessage(''));
+        dispatch(sendChatMessage({ message: 'Hello' }));
+      }, 100);
+    }
+  };
+
+  const handleChatClose = () => {
+    setIsChatOpen(false);
+  };
+
+  const handleClearChat = () => {
+    dispatch(clearMessages());
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -187,20 +232,31 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-white">Chat with Professionals</h2>
           {isChatOpen && (
-            <button
-              onClick={() => setIsChatOpen(false)}
-              className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleClearChat}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded-full px-3 py-1 text-sm transition-all"
+              >
+                Clear
+              </button>
+              <button
+                onClick={handleChatClose}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
           )}
         </div>
 
         {!isChatOpen ? (
           <div className="text-center py-8">
-            <p className="text-lg text-white opacity-90 mb-6">Connect with healthcare professionals instantly for guidance and support</p>
+            <p className="text-lg text-white opacity-90 mb-6">
+              Connect with healthcare professionals instantly for guidance and support. 
+              Ask about vet/groomer availability or general pet care questions!
+            </p>
             <button
-              onClick={() => setIsChatOpen(true)}
+              onClick={handleChatOpen}
               className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-semibold hover:bg-opacity-90 transition-all"
             >
               Start Chatting
@@ -211,29 +267,86 @@ export default function HomePage() {
             {/* Chat Messages Area */}
             <div className="flex-1 p-4 overflow-y-auto">
               <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">
-                    P
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex items-start gap-3 ${
+                      message.sender === 'user' ? 'flex-row-reverse' : ''
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold shrink-0 ${
+                        message.sender === 'user'
+                          ? 'bg-indigo-600'
+                          : message.isError
+                          ? 'bg-red-500'
+                          : 'bg-indigo-500'
+                      }`}
+                    >
+                      {message.sender === 'user' ? 'U' : 'A'}
+                    </div>
+                    <div
+                      className={`rounded-lg p-3 max-w-xs ${
+                        message.sender === 'user'
+                          ? 'bg-indigo-600 text-white'
+                          : message.isError
+                          ? 'bg-red-50 text-red-800 border border-red-200'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-line">{message.text}</p>
+                      <p className="text-xs mt-1 opacity-70">
+                        {new Date(message.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-gray-100 rounded-lg p-3 max-w-xs">
-                    <p className="text-sm text-gray-800">Hello! How can I help you today?</p>
+                ))}
+                
+                {/* Loading indicator */}
+                {chatLoading && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">
+                      A
+                    </div>
+                    <div className="bg-gray-100 rounded-lg p-3 max-w-xs">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                        <p className="text-sm text-gray-600">Typing...</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
+                
+                <div ref={messagesEndRef} />
               </div>
             </div>
 
             {/* Chat Input */}
             <div className="border-t p-4">
-              <div className="flex gap-2">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Type your message..."
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  placeholder="Ask about vet/groomer availability or pet care..."
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800"
+                  disabled={chatLoading}
                 />
-                <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-                  Send
+                <button
+                  type="submit"
+                  disabled={chatLoading || !messageInput.trim()}
+                  className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {chatLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Send className="w-5 h-5" />
+                  )}
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         )}
