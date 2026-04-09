@@ -5,7 +5,7 @@ import { fetchGroomers } from '../thunks/listGroomersThunk';
 import { createAppointment } from '../thunks/createAppointmentThunk';
 import { resetAppointmentState } from '../feature/createAppointmentSlice';
 
-export const createNewAppointment = () => {
+export const createNewAppointment = (preSelectedProfessional = null, preSelectedType = null) => {
   const dispatch = useDispatch();
   
   const { vets = [], loading: vetsLoading } = useSelector((state) => state.vets);
@@ -35,10 +35,10 @@ export const createNewAppointment = () => {
       : [];
 
   const [formData, setFormData] = useState({
-    appointmentType: '',
+    appointmentType: preSelectedType || '',
     date: '',
     time: '',
-    professionalId: '',
+    professionalId: preSelectedProfessional?.id || '',
     petId: '',
     description: ''
   });
@@ -123,6 +123,15 @@ export const createNewAppointment = () => {
       setFilteredProfessionals([]);
     }
   }, [formData.appointmentType, vets, groomers]);
+
+  useEffect(() => {
+    if (preSelectedProfessional && filteredProfessionals.length > 0) {
+      const professionalExists = filteredProfessionals.some(p => p.id === preSelectedProfessional.id);
+      if (!professionalExists) {
+        setFilteredProfessionals([preSelectedProfessional, ...filteredProfessionals]);
+      }
+    }
+  }, [preSelectedProfessional, filteredProfessionals]);
 
   const searchedProfessionals = filteredProfessionals.filter(prof => 
     prof.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

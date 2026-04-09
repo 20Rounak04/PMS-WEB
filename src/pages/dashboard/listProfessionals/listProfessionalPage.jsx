@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { fetchVets } from '../../../thunks/listVetsThunk';
 import { fetchGroomers } from '../../../thunks/listGroomersThunk';
 import { Search, AlertCircle, Star, Briefcase, Frown } from 'lucide-react';
 
 export default function ListProfessionalPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const { vets = [], loading: vetsLoading, error: vetsError } = useSelector((state) => state.vets);
   const { groomers = [], loading: groomersLoading, error: groomersError } = useSelector((state) => state.groomers);
@@ -25,7 +27,8 @@ export default function ListProfessionalPage() {
     rating: vet.rating || 4.5,
     experience: `${vet.experienceYears} years`,
     avatar: (vet.users?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase(),
-    available: vet.status === 'available'
+    available: vet.status === 'available',
+    type: 'vet'
   })) : [];
 
   const transformedGroomers = Array.isArray(groomers) ? groomers.map(groomer => ({
@@ -35,7 +38,8 @@ export default function ListProfessionalPage() {
     rating: groomer.rating || 4.5,
     experience: `${groomer.experienceYears} years`,
     avatar: (groomer.users?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase(),
-    available: groomer.status === 'available'
+    available: groomer.status === 'available',
+    type: 'groomer'
   })) : [];
 
   const currentList = selectedType === 'vet' ? transformedVets : transformedGroomers;
@@ -50,6 +54,23 @@ export default function ListProfessionalPage() {
   const handleRetry = () => {
     if (selectedType === 'vet') dispatch(fetchVets());
     else dispatch(fetchGroomers());
+  };
+
+  const handleBookAppointment = (professional) => {
+    navigate('/dashboard/appointment', {
+      state: {
+        preSelectedProfessional: {
+          id: professional.id,
+          name: professional.name,
+          specialty: professional.specialty,
+          rating: professional.rating,
+          experience: professional.experience,
+          avatar: professional.avatar,
+          type: professional.type
+        },
+        preSelectedType: professional.type === 'vet' ? 'veterinary' : 'grooming'
+      }
+    });
   };
 
   return (
@@ -171,11 +192,14 @@ export default function ListProfessionalPage() {
               </div>
 
               {/* Action Button */}
-              <button className={`w-full text-white px-4 py-2 rounded-lg transition-colors font-semibold ${
-                selectedType === 'vet'
-                  ? 'bg-indigo-600 hover:bg-indigo-700'
-                  : 'bg-purple-600 hover:bg-purple-700'
-              }`}>
+              <button 
+                onClick={() => handleBookAppointment(professional)}
+                className={`w-full text-white px-4 py-2 rounded-lg transition-colors font-semibold ${
+                  selectedType === 'vet'
+                    ? 'bg-indigo-600 hover:bg-indigo-700'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
+              >
                 Book Appointment
               </button>
             </div>

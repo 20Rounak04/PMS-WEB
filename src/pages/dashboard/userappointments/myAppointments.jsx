@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { fetchUpcomingAppointments } from '../../../thunks/getUpcomingAppointmentThunk';
 import { fetchCompletedAppointments } from '../../../thunks/getCompletedAppointmentThunk';
 import { fetchCancelledAppointments } from '../../../thunks/getCancelledAppointmentThunk';
@@ -45,6 +46,15 @@ function getInitialsFromName(fullName) {
     ? parts[1]?.[0] || first[0]
     : first[0];
   return `${firstInitial}${last[0]}`.toUpperCase();
+}
+
+function isAppointmentDatePassed(appointmentDate) {
+  if (!appointmentDate) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const aptDate = new Date(appointmentDate);
+  aptDate.setHours(0, 0, 0, 0);
+  return aptDate < today;
 }
 
 function VerificationBanner({ status, message, onDismiss }) {
@@ -304,6 +314,7 @@ function RescheduleModal({ appointment, onClose, onSave, isSaving }) {
 
 export default function MyAppointmentsPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
 
   const upcomingState = useSelector((state) => state.upcomingAppointments) || {};
@@ -336,6 +347,14 @@ export default function MyAppointmentsPage() {
   const cancelledAppointments = cancelledState.appointments || [];
   const cancelledLoading = cancelledState.loading || false;
   const cancelledError = cancelledState.error || null;
+
+  const paymentCompletedAppointments = Array.isArray(completedAppointments)
+    ? completedAppointments.filter(apt => !isAppointmentDatePassed(apt.appointmentDate))
+    : [];
+
+  const appointmentCompletedAppointments = Array.isArray(completedAppointments)
+    ? completedAppointments.filter(apt => isAppointmentDatePassed(apt.appointmentDate))
+    : [];
 
   const [selectedTab, setSelectedTab] = useState('upcoming');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -462,13 +481,15 @@ export default function MyAppointmentsPage() {
 
   const appointmentsByTab = {
     upcoming: Array.isArray(upcomingAppointments) ? upcomingAppointments : [],
-    past: Array.isArray(completedAppointments) ? completedAppointments : [],
+    paymentCompleted: paymentCompletedAppointments,
+    appointmentCompleted: appointmentCompletedAppointments,
     cancelled: Array.isArray(cancelledAppointments) ? cancelledAppointments : [],
   };
 
   const errorByTab = {
     upcoming: upcomingError,
-    past: completedError,
+    paymentCompleted: completedError,
+    appointmentCompleted: completedError,
     cancelled: cancelledError,
   };
 
@@ -594,9 +615,13 @@ export default function MyAppointmentsPage() {
     }
   };
 
+  const handleBookAgain = () => {
+    navigate('/dashboard/appointment');
+  };
+
   const isLoading =
-    (selectedTab === 'upcoming'  && upcomingLoading)  ||
-    (selectedTab === 'past'      && completedLoading) ||
+    (selectedTab === 'upcoming' && upcomingLoading) ||
+    ((selectedTab === 'paymentCompleted' || selectedTab === 'appointmentCompleted') && completedLoading) ||
     (selectedTab === 'cancelled' && cancelledLoading);
 
   return (
@@ -675,16 +700,17 @@ export default function MyAppointmentsPage() {
 
       {/* Tabs */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-        <div className="flex items-center gap-4 border-b border-gray-200">
+        <div className="flex items-center gap-4 border-b border-gray-200 overflow-x-auto">
           {[
-            { key: 'upcoming',  label: 'Upcoming',  count: upcomingAppointments.length },
-            { key: 'past',      label: 'Completed', count: completedAppointments.length },
-            { key: 'cancelled', label: 'Cancelled', count: cancelledAppointments.length },
+            { key: 'upcoming',              label: 'Upcoming',              count: upcomingAppointments.length },
+            { key: 'paymentCompleted',      label: 'Payment Completed',     count: paymentCompletedAppointments.length },
+            { key: 'appointmentCompleted',  label: 'Appointment Completed', count: appointmentCompletedAppointments.length },
+            { key: 'cancelled',             label: 'Cancelled',             count: cancelledAppointments.length },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => setSelectedTab(tab.key)}
-              className={`pb-4 px-4 font-semibold transition-all relative ${
+              className={`pb-4 px-4 font-semibold transition-all relative whitespace-nowrap ${
                 selectedTab === tab.key ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -819,8 +845,11 @@ export default function MyAppointmentsPage() {
                     </div>
                   )}
 
-                  {selectedTab === 'past' && (
-                    <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm">
+                  {(selectedTab === 'paymentCompleted' || selectedTab === 'appointmentCompleted') && (
+                    <button 
+                      onClick={handleBookAgain}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm"
+                    >
                       Book Again
                     </button>
                   )}
@@ -839,10 +868,13 @@ export default function MyAppointmentsPage() {
           <p className="text-gray-600 mb-4">
             {searchTerm
               ? 'Try adjusting your search criteria'
-              : `You don't have any ${selectedTab} appointments`}
+              : `You don't have any ${selectedTab === 'paymentCompleted' ? 'payment completed' : selectedTab === 'appointmentCompleted' ? 'appointment completed' : selectedTab} appointments`}
           </p>
           {selectedTab === 'upcoming' && !searchTerm && (
-            <button className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
+            <button 
+              onClick={handleBookAgain}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
+            >
               Book New Appointment
             </button>
           )}

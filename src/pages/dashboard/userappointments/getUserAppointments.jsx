@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { createNewAppointment } from '../../../components/createNewAppointment';
 import { CheckCircle, Search, Star } from 'lucide-react';
 
@@ -34,6 +35,10 @@ function SuccessModal({ isOpen, onClose }) {
 }
 
 export default function GetAppointmentPage() {
+  const location = useLocation();
+  const preSelectedProfessional = location.state?.preSelectedProfessional;
+  const preSelectedType = location.state?.preSelectedType;
+
   const {
     formData,
     currentStep,
@@ -53,7 +58,7 @@ export default function GetAppointmentPage() {
     setSearchTerm,
     isStepValid,
     handleModalClose
-  } = createNewAppointment();
+  } = createNewAppointment(preSelectedProfessional, preSelectedType);
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -65,6 +70,22 @@ export default function GetAppointmentPage() {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Get Appointment</h1>
         <p className="text-gray-600">Schedule a new appointment for your pet</p>
       </div>
+
+      {/* Pre-selected Professional Banner */}
+      {preSelectedProfessional && currentStep === 4 && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+              {preSelectedProfessional.avatar}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-indigo-800">Pre-selected Professional</p>
+              <p className="text-lg font-bold text-gray-800">{preSelectedProfessional.name}</p>
+              <p className="text-sm text-gray-600">{preSelectedProfessional.specialty}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Progress Steps */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
@@ -228,18 +249,20 @@ export default function GetAppointmentPage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Choose Professional</h2>
 
           {/* Search Bar */}
-          <div className="mb-6">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search by name or specialty..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800"
-              />
-              <Search className="w-6 h-6 text-gray-400 absolute left-4 top-3.5" />
+          {!preSelectedProfessional && (
+            <div className="mb-6">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by name or specialty..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800"
+                />
+                <Search className="w-6 h-6 text-gray-400 absolute left-4 top-3.5" />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Loading State */}
           {(vetsLoading || groomersLoading) && (
